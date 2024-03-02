@@ -26,12 +26,12 @@ namespace FolderCustomizer.Editor
         private Point start;
         private Point origin;
         private bool isMouseOverCenterRectangle = false;
+        private bool isMouseOverBottomRightRectangle = false;
 
         public EditableImageCanvas(Uri imagePath)
         {
             this.Height = 180;
             this.Width = 180;
-            this.Background = Brushes.Black;
 
 
             // Add the image as a child
@@ -53,8 +53,8 @@ namespace FolderCustomizer.Editor
             for (int i = 0; i < rectangles.Length; i++)
             {
                 rectangles[i] = new Rectangle();
-                rectangles[i].Width = 10;
-                rectangles[i].Height = 10;
+                rectangles[i].Width = 15;
+                rectangles[i].Height = 15;
                 rectangles[i].Fill = Brushes.Red;
                 rectangles[i].Visibility = Visibility.Hidden;
 
@@ -90,8 +90,8 @@ namespace FolderCustomizer.Editor
 
             // Add rectangle in the centre
             rectangles[4] = new Rectangle();
-            rectangles[4].Width = 10;
-            rectangles[4].Height = 10;
+            rectangles[4].Width = 15;
+            rectangles[4].Height = 15;
             rectangles[4].Fill = Brushes.Red;
             rectangles[4].Visibility = Visibility.Hidden;
             rectangles[4].Name = "center";
@@ -105,8 +105,10 @@ namespace FolderCustomizer.Editor
 
         private void editableImage_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            // Check if the mouse is over the center rectangle when capture starts
+            // Check if the mouse is over any of the rectangles
             isMouseOverCenterRectangle = IsMouseOverCenterRectangle();
+            isMouseOverBottomRightRectangle = IsMouseOverBottomRightRectangle();
+
 
             // Capture and remember the mouse position
             this.CaptureMouse();
@@ -117,6 +119,7 @@ namespace FolderCustomizer.Editor
         {
             // Reset the flag when mouse capture is released
             isMouseOverCenterRectangle = false;
+            isMouseOverBottomRightRectangle = false;
 
             // Release the mouse capture
             this.ReleaseMouseCapture();
@@ -133,6 +136,69 @@ namespace FolderCustomizer.Editor
                 // Move the image
                 this.RenderTransform = new TranslateTransform(position.X - start.X + origin.X, position.Y - start.Y + origin.Y);
             }
+
+            // Resize the canvas and all its children if the mouse is captured over the bottom-right rectangle
+            if (this.IsMouseCaptured && isMouseOverBottomRightRectangle)
+            {
+                // Get the position of the mouse relative to the canvas
+                Point position = e.GetPosition(this);
+
+                // Ensure minimum resize to 40x40
+                position.X = Math.Max(40, position.X);
+                position.Y = Math.Max(40, position.Y);
+
+                ResizeCanvasAndChildren(position);
+                ResizeRectangles();
+            }
+        }
+
+        private void ResizeCanvasAndChildren(Point position)
+        {
+            // Resize the canvas
+            this.Width = position.X;
+            this.Height = position.Y;
+
+            // Resize the image
+            foreach (UIElement element in this.Children)
+            {
+                if (element is Image)
+                {
+                    (element as Image).Width = position.X;
+                    (element as Image).Height = position.Y;
+                    (element as Image).Stretch = Stretch.Fill;
+                }
+            }
+        }
+
+        private void ResizeRectangles()
+        {
+            // Resize the rectangles
+            foreach (Rectangle rectangle in rectangles)
+            {
+                switch (rectangle.Name)
+                {
+                    case "leftTop":
+                        Canvas.SetLeft(rectangle, 0);
+                        Canvas.SetTop(rectangle, 0);
+                        break;
+                    case "rightTop":
+                        Canvas.SetLeft(rectangle, this.Width - rectangle.Width);
+                        Canvas.SetTop(rectangle, 0);
+                        break;
+                    case "leftBottom":
+                        Canvas.SetLeft(rectangle, 0);
+                        Canvas.SetTop(rectangle, this.Height - rectangle.Height);
+                        break;
+                    case "rightBottom":
+                        Canvas.SetLeft(rectangle, this.Width - rectangle.Width);
+                        Canvas.SetTop(rectangle, this.Height - rectangle.Height);
+                        break;
+                    case "center":
+                        Canvas.SetLeft(rectangle, this.Width / 2 - rectangle.Width / 2);
+                        Canvas.SetTop(rectangle, this.Height / 2 - rectangle.Height / 2);
+                        break;
+                }
+            }
         }
 
         private void editableImage_MouseEnter(object sender, MouseEventArgs e)
@@ -140,7 +206,8 @@ namespace FolderCustomizer.Editor
             // Show the rectangles
             foreach (Rectangle rectangle in rectangles)
             {
-                rectangle.Visibility = Visibility.Visible;
+                if(rectangle.Name == "center" || rectangle.Name == "rightBottom")
+                    rectangle.Visibility = Visibility.Visible;
             }
         }
 
@@ -161,6 +228,21 @@ namespace FolderCustomizer.Editor
             // Check if the mouse is over the center rectangle
             if (position.X >= Canvas.GetLeft(rectangles[4]) && position.X <= Canvas.GetLeft(rectangles[4]) + rectangles[4].Width &&
                 position.Y >= Canvas.GetTop(rectangles[4]) && position.Y <= Canvas.GetTop(rectangles[4]) + rectangles[4].Height)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool IsMouseOverBottomRightRectangle()
+        {
+            // Get the position of the mouse relative to the canvas
+            Point position = Mouse.GetPosition(this);
+
+            // Check if the mouse is over the bottom-right rectangle
+            if (position.X >= Canvas.GetLeft(rectangles[3]) && position.X <= Canvas.GetLeft(rectangles[3]) + rectangles[3].Width &&
+                               position.Y >= Canvas.GetTop(rectangles[3]) && position.Y <= Canvas.GetTop(rectangles[3]) + rectangles[3].Height)
             {
                 return true;
             }
