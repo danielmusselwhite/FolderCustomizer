@@ -14,6 +14,10 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Forms;
+using MouseEventHandler = System.Windows.Input.MouseEventHandler;
+using MouseEventArgs = System.Windows.Input.MouseEventArgs;
+using System.Windows.Automation.Peers;
+using FolderCustomizer.Editor;
 
 namespace FolderCustomizer
 {
@@ -35,15 +39,34 @@ namespace FolderCustomizer
             folderBrowserDialog.ShowDialog();
             updateSelectedFolderTxt(folderBrowserDialog.SelectedPath);
 
+            updateCanvas(folderBrowserDialog.SelectedPath);
+
 
 
 
         }
 
-        private void updateSelectedFolderTxt(string foldername)
+        private void updateSelectedFolderTxt(string folderPath)
         {
             // Update the textbox with the selected folder or folder
-            txt_SelectedFolder.Text = foldername;
+            txt_SelectedFolder.Text = folderPath;
+        }
+
+        private void updateCanvas(string folderPath)
+        {
+            // Update the canvas with the selected folder or folder
+            // Create a new instance of the canvas
+            Canvas canvas = iconEditorCanvas;
+
+            // Clear the canvas
+            canvas.Children.Clear();
+
+            // Create a editable image with Uri("pack://application:,,,/res/folder.png") to let user resize, rotate, and move the image
+            Image folderIcon = new Image();
+            EditableImageCanvas folderEditable = new EditableImageCanvas(new Uri("pack://application:,,,/res/folder.png"));
+            canvas.Children.Add(folderEditable);
         }
     }
+
+
 }
