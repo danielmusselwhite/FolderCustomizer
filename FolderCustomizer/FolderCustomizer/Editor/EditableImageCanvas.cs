@@ -42,12 +42,13 @@ namespace FolderCustomizer.Editor
             this.Children.Add(image);
 
             // Add event handlers for mouse events
-            this.MouseLeftButtonDown += new MouseButtonEventHandler(editableImage_MouseLeftButtonDown);
-            this.MouseLeftButtonUp += new MouseButtonEventHandler(editableImage_MouseLeftButtonUp);
-            this.MouseMove += new MouseEventHandler(editableImage_MouseMove);
-            this.MouseLeave += new MouseEventHandler(editableImage_MouseMove);
-            this.MouseEnter += new MouseEventHandler(editableImage_MouseEnter);
-            this.MouseLeave += new MouseEventHandler(editableImage_MouseLeave);
+            this.MouseLeftButtonDown += new MouseButtonEventHandler(EditableImageCanvas_MouseLeftButtonDown);
+            this.MouseLeftButtonUp += new MouseButtonEventHandler(EditableImageCanvas_MouseLeftButtonUp);
+            this.MouseMove += new MouseEventHandler(EditableImageCanvas_MouseMove);
+            this.MouseLeave += new MouseEventHandler(EditableImageCanvas_MouseMove);
+            this.MouseEnter += new MouseEventHandler(EditableImageCanvas_MouseEnter);
+            this.MouseLeave += new MouseEventHandler(EditableImageCanvas_MouseLeave);
+
 
             // Add a red rectangle in each corner of the canvas
             for (int i = 0; i < rectangles.Length; i++)
@@ -103,7 +104,7 @@ namespace FolderCustomizer.Editor
 
         }
 
-        private void editableImage_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        private void EditableImageCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             // Check if the mouse is over any of the rectangles
             isMouseOverCenterRectangle = IsMouseOverCenterRectangle();
@@ -115,7 +116,7 @@ namespace FolderCustomizer.Editor
             start = e.GetPosition(this);
         }
 
-        private void editableImage_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        private void EditableImageCanvas_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
             // Reset the flag when mouse capture is released
             isMouseOverCenterRectangle = false;
@@ -125,7 +126,7 @@ namespace FolderCustomizer.Editor
             this.ReleaseMouseCapture();
         }
 
-        private void editableImage_MouseMove(object sender, MouseEventArgs e)
+        private void EditableImageCanvas_MouseMove(object sender, MouseEventArgs e)
         {
             // Move the image if the mouse is captured over the centre rectangle
             if (this.IsMouseCaptured && isMouseOverCenterRectangle)
@@ -201,7 +202,7 @@ namespace FolderCustomizer.Editor
             }
         }
 
-        private void editableImage_MouseEnter(object sender, MouseEventArgs e)
+        private void EditableImageCanvas_MouseEnter(object sender, MouseEventArgs e)
         {
             // Show the rectangles
             foreach (Rectangle rectangle in rectangles)
@@ -211,7 +212,7 @@ namespace FolderCustomizer.Editor
             }
         }
 
-        private void editableImage_MouseLeave(object sender, MouseEventArgs e)
+        private void EditableImageCanvas_MouseLeave(object sender, MouseEventArgs e)
         {
             // Hide the rectangles
             foreach (Rectangle rectangle in rectangles)

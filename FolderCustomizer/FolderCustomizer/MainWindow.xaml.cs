@@ -63,8 +63,25 @@ namespace FolderCustomizer
 
             // Create a editable image with Uri("pack://application:,,,/res/folder.png") to let user resize, rotate, and move the image
             Image folderIcon = new Image();
-            EditableImageCanvas folderEditable = new EditableImageCanvas(new Uri("pack://application:,,,/res/folder.png"));
-            canvas.Children.Add(folderEditable);
+            folderIcon.Source = new BitmapImage(new Uri("pack://application:,,,/res/folder.png"));
+            folderIcon.Width = canvas.Width;
+            folderIcon.Height = canvas.Height;
+            canvas.Children.Add(folderIcon);
+
+        }
+
+        private void Btn_AddImage_Click(object sender, RoutedEventArgs e)
+        {
+            // Popup to let user select IMAGE to add to the canvas
+            System.Windows.Forms.OpenFileDialog openFileDialog = new System.Windows.Forms.OpenFileDialog();
+            openFileDialog.Filter = "Image files (*.png;*.jpeg;*.jpg)|*.png;*.jpeg;*.jpg";
+            openFileDialog.ShowDialog();
+
+            // Add an EditableImageCanvas to the iconEditorCanvas
+            Canvas canvas = iconEditorCanvas;
+            EditableImageCanvas imageEditable = new EditableImageCanvas(new Uri(openFileDialog.FileName));
+            canvas.Children.Add(imageEditable);
+
         }
     }
 
