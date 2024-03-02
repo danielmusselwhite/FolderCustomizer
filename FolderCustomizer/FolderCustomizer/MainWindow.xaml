@@ -1,0 +1,14 @@
+﻿<Window x:Class="FolderCustomizer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:FolderCustomizer"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800">
+    <Grid>
+        <Button Name="btn_LoadFolder" Content="Load Folder" HorizontalAlignment="Left" Margin="51,52,0,0" VerticalAlignment="Top" Width="118" Click="Btn_Load_Click"/>
+        <TextBlock Name="txt_SelectedFolder" HorizontalAlignment="Left" Margin="51,77,0,0" TextWrapping="Wrap" Text="No folder selected" VerticalAlignment="Top" Width="120"/>
+        
+    </Grid>
+</Window>
