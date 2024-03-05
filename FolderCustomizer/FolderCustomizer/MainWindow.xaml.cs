@@ -2,6 +2,8 @@
 using Microsoft.Win32;
 using System;
 using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -9,32 +11,27 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Image = System.Windows.Controls.Image;
 using Size = System.Windows.Size;
 
 namespace FolderCustomizer
 {
     public partial class MainWindow : Window
     {
+
+        private System.Windows.Controls.Image folderIcon;
+
         public MainWindow()
         {
             InitializeComponent();
 
-            // hide everything besides the btn_LoadFolder
-            iconEditorCanvas.Visibility = Visibility.Hidden;
-            btn_addImage.Visibility = Visibility.Hidden;
-            btn_saveImg.Visibility = Visibility.Hidden;
-            txt_SelectedFolder.Visibility = Visibility.Hidden;
-            cbx_Bases.Visibility = Visibility.Hidden;
+            // adding the different baseIcons to the combobox
+            cbx_Bases.Items.Add("EmptyFolder");
+            cbx_Bases.Items.Add("FullFolder");
 
-            // adding the different colours to the combobox
-            cbx_Bases.Items.Add("Yellow");
-            cbx_Bases.Items.Add("Red");
-            cbx_Bases.Items.Add("Green");
-            cbx_Bases.Items.Add("Blue");
-            cbx_Bases.Items.Add("Purple");
-            cbx_Bases.Items.Add("Orange");
 
             // set the default colour to yellow
             cbx_Bases.SelectedIndex = 0;
@@ -49,7 +46,7 @@ namespace FolderCustomizer
             folderBrowserDialog.Description = "Select a folder to customize";
             folderBrowserDialog.ShowDialog();
 
-            // If the selectedPath is not empty, show everything
+            // If the selectedPath is not empty, then update the selected folder textbox and the canvas
             if (folderBrowserDialog.SelectedPath != "")
             {
                 updateSelectedFolderTxt(folderBrowserDialog.SelectedPath);
@@ -57,22 +54,6 @@ namespace FolderCustomizer
                 updateCanvas(folderBrowserDialog.SelectedPath);
 
                 folderPath = folderBrowserDialog.SelectedPath;
-
-                // show everything
-                iconEditorCanvas.Visibility = Visibility.Visible;
-                btn_addImage.Visibility = Visibility.Visible;
-                btn_saveImg.Visibility = Visibility.Visible;
-                txt_SelectedFolder.Visibility = Visibility.Visible;
-                cbx_Bases.Visibility = Visibility.Visible;
-            }
-            // Else, hide everything
-            else
-            {
-                iconEditorCanvas.Visibility = Visibility.Hidden;
-                btn_addImage.Visibility = Visibility.Hidden;
-                btn_saveImg.Visibility = Visibility.Hidden;
-                txt_SelectedFolder.Visibility = Visibility.Hidden;
-                cbx_Bases.Visibility = Visibility.Hidden;
             }
             
         }
@@ -93,10 +74,10 @@ namespace FolderCustomizer
             // Clear the canvas
             canvas.Children.Clear();
 
-            // Create a editable image with Uri("pack://application:,,,/res/folder.png") to let user resize, rotate, and move the image
-            System.Windows.Controls.Image folderIcon = new System.Windows.Controls.Image();
-            string colour = cbx_Bases.SelectedItem.ToString().ToLower();
-            folderIcon.Source = new BitmapImage(new Uri($"pack://application:,,,/res/images/colours/{colour}.png"));
+            // Create the base icon
+            folderIcon = new System.Windows.Controls.Image();
+            string baseIcon = cbx_Bases.SelectedItem.ToString().ToLower();
+            folderIcon.Source = new BitmapImage(new Uri($"pack://application:,,,/res/images/bases/{baseIcon}.png"));
             folderIcon.Width = canvas.Width;
             folderIcon.Height = canvas.Height;
             canvas.Children.Add(folderIcon);
@@ -132,6 +113,86 @@ namespace FolderCustomizer
                 System.Windows.MessageBox.Show(ex.Message);
             }
         }
+
+        private void Btn_ColourPicker_Click(object sender, RoutedEventArgs e)
+        {
+            // Popup to let user select COLOUR to add to the canvas
+            System.Windows.Forms.ColorDialog colorDialog = new System.Windows.Forms.ColorDialog();
+            colorDialog.ShowDialog();
+
+            // Get the selected color
+            System.Drawing.Color selectedColor = colorDialog.Color;
+
+            // Convert the System.Drawing.Color to System.Windows.Media.Color
+            System.Windows.Media.Color wpfColor = System.Windows.Media.Color.FromArgb(selectedColor.A, selectedColor.R, selectedColor.G, selectedColor.B);
+
+            // Apply the color to the image
+            ApplyColorToImage(wpfColor);
+        }
+
+        private void ApplyColorToImage(System.Windows.Media.Color color)
+        {
+
+            // img = the selection from combobox
+            string baseIcon = cbx_Bases.SelectedItem.ToString().ToLower();
+            BitmapImage img = new BitmapImage(new Uri($"pack://application:,,,/res/images/bases/{baseIcon}.png"));
+
+            // Create a new WriteableBitmap from the original image source
+            BitmapSource bitmapSource = img;
+            WriteableBitmap writeableBitmap = new WriteableBitmap(bitmapSource);
+
+            // Lock the bitmap to write pixel data
+            writeableBitmap.Lock();
+
+            // Get the pixel buffer
+            IntPtr buffer = writeableBitmap.BackBuffer;
+            int stride = writeableBitmap.BackBufferStride;
+            int width = writeableBitmap.PixelWidth;
+            int height = writeableBitmap.PixelHeight;
+
+            // Iterate through each pixel and apply the color shift
+            unsafe
+            {
+                byte* p = (byte*)buffer.ToPointer();
+                for (int y = 0; y < height; y++)
+                {
+                    for (int x = 0; x < width; x++)
+                    {
+                        // Get the pixel offset
+                        int offset = y * stride + 4 * x;
+
+                        // Get the original pixel color
+                        byte blue = p[offset];
+                        byte green = p[offset + 1];
+                        byte red = p[offset + 2];
+                        byte alpha = p[offset + 3];
+
+                        // Calculate grayscale intensity
+                        double intensity = (0.299 * red + 0.587 * green + 0.114 * blue) / 255.0;
+
+                        // Calculate new color components based on the selected color
+                        byte newRed = (byte)(color.R * intensity);
+                        byte newGreen = (byte)(color.G * intensity);
+                        byte newBlue = (byte)(color.B * intensity);
+
+                        // Update the pixel color
+                        p[offset] = newBlue;
+                        p[offset + 1] = newGreen;
+                        p[offset + 2] = newRed;
+                    }
+                }
+            }
+
+            // Unlock the bitmap
+            writeableBitmap.Unlock();
+
+            // Update the image source with the modified bitmap
+            folderIcon.Source = writeableBitmap;
+        }
+
+
+
+
 
         private void Btn_UpdateFolder_Icon(object sender, RoutedEventArgs e)
         {

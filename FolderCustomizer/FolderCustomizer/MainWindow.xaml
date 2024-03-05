@@ -14,10 +14,13 @@
         <Button Name="btn_saveImg" Content="Save" HorizontalAlignment="Left" Margin="237,107,0,0" VerticalAlignment="Top" Width="113" Click="Btn_UpdateFolder_Icon" Height="21"/>
         <!-- Combo Box for selecting the image -->
         <ComboBox Name="cbx_Bases" HorizontalAlignment="Left" Margin="420,112,0,0" VerticalAlignment="Top" Width="120" Height="21" SelectionChanged="Cbx_ColourChanged"/>
+        <!-- Button to open color picker-->
+        <Button Name="btn_ColourPicker" Content="Colour Picker" HorizontalAlignment="Left" Margin="622,112,0,0" VerticalAlignment="Top" Width="113" Click="Btn_ColourPicker_Click" Height="21"/>
 
         <Canvas Name="iconEditorCanvas" Height="264" Canvas.Left="35" Canvas.Top="137" Width="264" Margin="51,149,485,21">
             <Border BorderBrush="Black" BorderThickness="1" Height="264" Width="264"/>
         </Canvas>
+
 
     </Grid>
 </Window>
