@@ -172,7 +172,7 @@ namespace FolderCustomizer
 
             // Convert PNG to ICO
             string icoFilePath = System.IO.Path.Combine(folderPath, "custom_icon.ico");
-            ImagingHelper.ConvertToIcon(pngFilePath, icoFilePath, 128);
+            ImagingHelper.ConvertToIcon(pngFilePath, icoFilePath, 512);
             // Set the .png to hidden
             System.IO.File.SetAttributes(pngFilePath, System.IO.File.GetAttributes(pngFilePath) | System.IO.FileAttributes.Hidden);
 
