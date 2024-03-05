@@ -17,6 +17,7 @@ using System.Windows.Forms;
 using MouseEventHandler = System.Windows.Input.MouseEventHandler;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 using System.Windows.Automation.Peers;
+using System.Diagnostics;
 
 namespace FolderCustomizer.Editor
 {
@@ -32,6 +33,9 @@ namespace FolderCustomizer.Editor
         {
             this.Height = 180;
             this.Width = 180;
+
+            // Ensure the control is focusable
+            this.Focusable = true;
 
 
             // Add the image as a child
@@ -49,6 +53,9 @@ namespace FolderCustomizer.Editor
             this.MouseLeave += new MouseEventHandler(EditableImageCanvas_MouseMove);
             this.MouseEnter += new MouseEventHandler(EditableImageCanvas_MouseEnter);
             this.MouseLeave += new MouseEventHandler(EditableImageCanvas_MouseLeave);
+
+            // Add event handler for delete key press
+            this.KeyDown += new System.Windows.Input.KeyEventHandler(EditableImageCanvas_KeyDown);
 
 
             // Add a red rectangle in each corner of the canvas
@@ -103,6 +110,14 @@ namespace FolderCustomizer.Editor
 
 
 
+        }
+
+        private void EditableImageCanvas_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == Key.Delete)
+            {
+                this.Visibility = Visibility.Collapsed;
+            }
         }
 
         private void EditableImageCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -205,6 +220,10 @@ namespace FolderCustomizer.Editor
 
         private void EditableImageCanvas_MouseEnter(object sender, MouseEventArgs e)
         {
+            // Take focus
+            this.Focus();
+            Keyboard.Focus(this);
+
             // Show the rectangles
             foreach (Rectangle rectangle in rectangles)
             {
@@ -215,6 +234,9 @@ namespace FolderCustomizer.Editor
 
         private void EditableImageCanvas_MouseLeave(object sender, MouseEventArgs e)
         {
+            // Release focus
+            Keyboard.ClearFocus();
+
             // Hide the rectangles
             foreach (Rectangle rectangle in rectangles)
             {

@@ -48,18 +48,33 @@ namespace FolderCustomizer
             FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog();
             folderBrowserDialog.Description = "Select a folder to customize";
             folderBrowserDialog.ShowDialog();
-            updateSelectedFolderTxt(folderBrowserDialog.SelectedPath);
 
-            updateCanvas(folderBrowserDialog.SelectedPath);
+            // If the selectedPath is not empty, show everything
+            if (folderBrowserDialog.SelectedPath != "")
+            {
+                updateSelectedFolderTxt(folderBrowserDialog.SelectedPath);
 
-            folderPath = folderBrowserDialog.SelectedPath;
+                updateCanvas(folderBrowserDialog.SelectedPath);
 
-            // show everything
-            iconEditorCanvas.Visibility = Visibility.Visible;
-            btn_addImage.Visibility = Visibility.Visible;
-            btn_saveImg.Visibility = Visibility.Visible;
-            txt_SelectedFolder.Visibility = Visibility.Visible;
-            cbx_Bases.Visibility = Visibility.Visible;
+                folderPath = folderBrowserDialog.SelectedPath;
+
+                // show everything
+                iconEditorCanvas.Visibility = Visibility.Visible;
+                btn_addImage.Visibility = Visibility.Visible;
+                btn_saveImg.Visibility = Visibility.Visible;
+                txt_SelectedFolder.Visibility = Visibility.Visible;
+                cbx_Bases.Visibility = Visibility.Visible;
+            }
+            // Else, hide everything
+            else
+            {
+                iconEditorCanvas.Visibility = Visibility.Hidden;
+                btn_addImage.Visibility = Visibility.Hidden;
+                btn_saveImg.Visibility = Visibility.Hidden;
+                txt_SelectedFolder.Visibility = Visibility.Hidden;
+                cbx_Bases.Visibility = Visibility.Hidden;
+            }
+            
         }
 
         private void updateSelectedFolderTxt(string folderPath)
@@ -140,10 +155,16 @@ namespace FolderCustomizer
             }
             renderBitmap.Render(drawingVisual);
 
+            // If PNG already exists, delete it
+            string pngFilePath = System.IO.Path.Combine(folderPath, "custom_icon.png");
+            if (System.IO.File.Exists(pngFilePath))
+            {
+                System.IO.File.Delete(pngFilePath);
+            }
+
             // Save the bitmap as a PNG file
             BitmapEncoder encoder = new PngBitmapEncoder();
             encoder.Frames.Add(BitmapFrame.Create(renderBitmap));
-            string pngFilePath = System.IO.Path.Combine(folderPath, "custom_icon.png");
             using (var fileStream = new System.IO.FileStream(pngFilePath, System.IO.FileMode.Create))
             {
                 encoder.Save(fileStream);
@@ -152,11 +173,13 @@ namespace FolderCustomizer
             // Convert PNG to ICO
             string icoFilePath = System.IO.Path.Combine(folderPath, "custom_icon.ico");
             ImagingHelper.ConvertToIcon(pngFilePath, icoFilePath, 128);
+            // Set the .png to hidden
+            System.IO.File.SetAttributes(pngFilePath, System.IO.File.GetAttributes(pngFilePath) | System.IO.FileAttributes.Hidden);
 
             UpdateFolderIcon(icoFilePath, folderPath);
         }
 
-        private void UpdateFolderIcon(string icoFilePath, string folderPath)
+        private void UpdateFolderIcon(string iconFilePath, string folderPath)
         {
             // update the .ini file to look like this:
             /*
@@ -165,7 +188,6 @@ namespace FolderCustomizer
              */
 
             string iniFilePath = System.IO.Path.Combine(folderPath, "desktop.ini");
-            string iconFilePath = icoFilePath;
 
             // make the folder a system folder
             System.IO.File.SetAttributes(folderPath, System.IO.File.GetAttributes(folderPath) | System.IO.FileAttributes.System);
@@ -182,7 +204,10 @@ namespace FolderCustomizer
             }
 
             // Set file attributes to make desktop.ini a system file and hidden
-            System.IO.File.SetAttributes(iniFilePath, System.IO.File.GetAttributes(iniFilePath) | System.IO.FileAttributes.System); // | System.IO.FileAttributes.Hidden);
+            System.IO.File.SetAttributes(iniFilePath, System.IO.File.GetAttributes(iniFilePath) | System.IO.FileAttributes.System | System.IO.FileAttributes.Hidden);
+
+            // Set the .ico as hidden
+            System.IO.File.SetAttributes(iconFilePath, System.IO.File.GetAttributes(iconFilePath) | System.IO.FileAttributes.Hidden);
 
             // Refresh the folder to apply changes
             System.Diagnostics.Process.Start("explorer.exe", "/select,\"" + folderPath + "\"");
