@@ -1,7 +1,10 @@
 ﻿using FolderCustomizer.Editor;
 using Microsoft.Win32;
 using System;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -23,6 +26,18 @@ namespace FolderCustomizer
             btn_addImage.Visibility = Visibility.Hidden;
             btn_saveImg.Visibility = Visibility.Hidden;
             txt_SelectedFolder.Visibility = Visibility.Hidden;
+            cbx_Bases.Visibility = Visibility.Hidden;
+
+            // adding the different colours to the combobox
+            cbx_Bases.Items.Add("Yellow");
+            cbx_Bases.Items.Add("Red");
+            cbx_Bases.Items.Add("Green");
+            cbx_Bases.Items.Add("Blue");
+            cbx_Bases.Items.Add("Purple");
+            cbx_Bases.Items.Add("Orange");
+
+            // set the default colour to yellow
+            cbx_Bases.SelectedIndex = 0;
         }
 
         private string folderPath = "";
@@ -44,6 +59,7 @@ namespace FolderCustomizer
             btn_addImage.Visibility = Visibility.Visible;
             btn_saveImg.Visibility = Visibility.Visible;
             txt_SelectedFolder.Visibility = Visibility.Visible;
+            cbx_Bases.Visibility = Visibility.Visible;
         }
 
         private void updateSelectedFolderTxt(string folderPath)
@@ -51,6 +67,7 @@ namespace FolderCustomizer
             // Update the textbox with the selected folder or folder
             txt_SelectedFolder.Text = folderPath;
         }
+
 
         private void updateCanvas(string folderPath)
         {
@@ -63,10 +80,16 @@ namespace FolderCustomizer
 
             // Create a editable image with Uri("pack://application:,,,/res/folder.png") to let user resize, rotate, and move the image
             System.Windows.Controls.Image folderIcon = new System.Windows.Controls.Image();
-            folderIcon.Source = new BitmapImage(new Uri("pack://application:,,,/res/folder.png"));
+            string colour = cbx_Bases.SelectedItem.ToString().ToLower();
+            folderIcon.Source = new BitmapImage(new Uri($"pack://application:,,,/res/images/colours/{colour}.png"));
             folderIcon.Width = canvas.Width;
             folderIcon.Height = canvas.Height;
             canvas.Children.Add(folderIcon);
+        }
+
+        private void Cbx_ColourChanged(object sender, SelectionChangedEventArgs e)
+        {
+            updateCanvas(folderPath);
         }
 
         private void Btn_AddImage_Click(object sender, RoutedEventArgs e)

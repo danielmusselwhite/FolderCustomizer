@@ -4,18 +4,19 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:FolderCustomizer"
+        xmlns:editor="clr-namespace:FolderCustomizer.Editor"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
         <Button Name="btn_LoadFolder" Content="Load Folder" HorizontalAlignment="Left" Margin="51,52,0,0" VerticalAlignment="Top" Width="118" Click="Btn_Load_Click"/>
-        <TextBlock Name="txt_SelectedFolder" HorizontalAlignment="Left" Margin="51,77,0,0" TextWrapping="Wrap" Text="No folder selected" VerticalAlignment="Top" Width="120"/>
+        <TextBlock Name="txt_SelectedFolder" HorizontalAlignment="Left" Margin="51,77,0,0" TextWrapping="Wrap" Text="No folder selected" VerticalAlignment="Top" Width="489" Height="16"/>
         <Button Name="btn_addImage" Content="Add Image" HorizontalAlignment="Left" Margin="51,107,0,0" VerticalAlignment="Top" Width="118" Click="Btn_AddImage_Click" Height="21"/>
         <Button Name="btn_saveImg" Content="Save" HorizontalAlignment="Left" Margin="237,107,0,0" VerticalAlignment="Top" Width="113" Click="Btn_UpdateFolder_Icon" Height="21"/>
+        <!-- Combo Box for selecting the image -->
+        <ComboBox Name="cbx_Bases" HorizontalAlignment="Left" Margin="420,112,0,0" VerticalAlignment="Top" Width="120" Height="21" SelectionChanged="Cbx_ColourChanged"/>
 
-        <Canvas>
-            <Canvas Name="iconEditorCanvas" Height="264" Canvas.Left="35" Canvas.Top="137" Width="264">
-                <Border BorderBrush="Black" BorderThickness="1" Height="264" Width="264"/>
-            </Canvas>
+        <Canvas Name="iconEditorCanvas" Height="264" Canvas.Left="35" Canvas.Top="137" Width="264" Margin="51,149,485,21">
+            <Border BorderBrush="Black" BorderThickness="1" Height="264" Width="264"/>
         </Canvas>
 
     </Grid>

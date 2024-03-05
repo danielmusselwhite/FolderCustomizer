@@ -10,10 +10,22 @@
 
   <ItemGroup>
     <None Remove="res\folder.png" />
+    <None Remove="res\images\colours\blue.png" />
+    <None Remove="res\images\colours\green.png" />
+    <None Remove="res\images\colours\orange.png" />
+    <None Remove="res\images\colours\purple.png" />
+    <None Remove="res\images\colours\red.png" />
+    <None Remove="res\images\colours\yellow.png" />
   </ItemGroup>
 
   <ItemGroup>
     <Resource Include="res\folder.png" />
+    <Resource Include="res\images\colours\blue.png" />
+    <Resource Include="res\images\colours\green.png" />
+    <Resource Include="res\images\colours\orange.png" />
+    <Resource Include="res\images\colours\purple.png" />
+    <Resource Include="res\images\colours\red.png" />
+    <Resource Include="res\images\colours\yellow.png" />
   </ItemGroup>
 
   <ItemGroup>
