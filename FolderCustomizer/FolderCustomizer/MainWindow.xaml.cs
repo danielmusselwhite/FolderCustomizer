@@ -78,8 +78,21 @@ namespace FolderCustomizer
 
             // Add an EditableImageCanvas to the iconEditorCanvas
             Canvas canvas = iconEditorCanvas;
-            EditableImageCanvas imageEditable = new EditableImageCanvas(new Uri(openFileDialog.FileName));
-            canvas.Children.Add(imageEditable);
+            try
+            {
+                EditableImageCanvas imageEditable = new EditableImageCanvas(new Uri(openFileDialog.FileName));
+                canvas.Children.Add(imageEditable);
+            }
+            // ignore if user cancels the file dialog
+            catch (Exception ex) when (ex is System.ArgumentException || ex is System.UriFormatException)
+            {
+                return;
+            }
+            // show error message if there is an error
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show(ex.Message);
+            }
         }
 
         private void Btn_UpdateFolder_Icon(object sender, RoutedEventArgs e)
@@ -107,36 +120,17 @@ namespace FolderCustomizer
             // Save the bitmap as a PNG file
             BitmapEncoder encoder = new PngBitmapEncoder();
             encoder.Frames.Add(BitmapFrame.Create(renderBitmap));
-            string iconFilePath = System.IO.Path.Combine(folderPath, "custom_icon.png");
-            using (var fileStream = new System.IO.FileStream(iconFilePath, System.IO.FileMode.Create))
+            string pngFilePath = System.IO.Path.Combine(folderPath, "custom_icon.png");
+            using (var fileStream = new System.IO.FileStream(pngFilePath, System.IO.FileMode.Create))
             {
                 encoder.Save(fileStream);
             }
 
             // Convert PNG to ICO
-            string icoPath = ConvertToIcon(iconFilePath, System.IO.Path.Combine(folderPath, "custom_icon.ico"));
+            string icoFilePath = System.IO.Path.Combine(folderPath, "custom_icon.ico");
+            ImagingHelper.ConvertToIcon(pngFilePath, icoFilePath, 128);
 
-            UpdateFolderIcon(icoPath, folderPath);
-        }
-
-        private string ConvertToIcon(string sourceImagePath, string destinationIconPath)
-        {
-            using (System.IO.FileStream inputStream = new System.IO.FileStream(sourceImagePath, System.IO.FileMode.Open))
-            {
-                using (System.Drawing.Bitmap bitmap = new System.Drawing.Bitmap(inputStream))
-                {
-                    using (System.IO.FileStream outputStream = new System.IO.FileStream(destinationIconPath, System.IO.FileMode.Create))
-                    {
-                        // Create an icon with the same size as the bitmap
-                        System.Drawing.Icon icon = System.Drawing.Icon.FromHandle(bitmap.GetHicon());
-
-                        // Save the icon with the original colors and alpha channel intact
-                        icon.Save(outputStream);
-
-                        return destinationIconPath;
-                    }
-                }
-            }
+            UpdateFolderIcon(icoFilePath, folderPath);
         }
 
         private void UpdateFolderIcon(string icoFilePath, string folderPath)
@@ -152,6 +146,10 @@ namespace FolderCustomizer
 
             // make the folder a system folder
             System.IO.File.SetAttributes(folderPath, System.IO.File.GetAttributes(folderPath) | System.IO.FileAttributes.System);
+
+            // If the desktop.ini file exists, delete it
+            if (System.IO.File.Exists(iniFilePath))
+                System.IO.File.Delete(iniFilePath);
 
             // Create the .ini file
             using (System.IO.StreamWriter file = new System.IO.StreamWriter(iniFilePath))
