@@ -25,3 +25,8 @@
 
 ## Developer Information
 
+- Created a C# DotNet WPF GUI Application which allows users to customise specific folder's icons
+
+- Works by converting the contents of the Canvas into a .ico then referencing it in the desktop.ini for that folder
+
+- Utilizes custom editableImageCanvas to allow user to resize, move, and delete images within
