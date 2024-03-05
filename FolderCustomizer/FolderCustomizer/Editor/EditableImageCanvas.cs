@@ -39,6 +39,7 @@ namespace FolderCustomizer.Editor
             image.Source = new BitmapImage(imagePath);
             image.Width = 180;
             image.Height = 180;
+            image.Stretch = Stretch.Fill;
             this.Children.Add(image);
 
             // Add event handlers for mouse events
