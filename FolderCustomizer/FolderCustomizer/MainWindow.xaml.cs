@@ -9,7 +9,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using FolderCustomizer.Services;
-
+using System.Linq;
 using DrawingColor = System.Drawing.Color;
 using FormsColorDialog = System.Windows.Forms.ColorDialog;
 using MediaColor = System.Windows.Media.Color;
@@ -415,32 +415,63 @@ public partial class MainWindow : Window
 
     private void RenderEditorToPng(string outputPath)
     {
-        int width = (int)Math.Ceiling(iconEditorCanvas.ActualWidth);
-        int height = (int)Math.Ceiling(iconEditorCanvas.ActualHeight);
+        var editableImages =
+            iconEditorCanvas.Children
+                .OfType<EditableImageCanvas>()
+                .ToList();
 
-        if (width <= 0 || height <= 0)
+        try
         {
-            width = IconSize;
-            height = IconSize;
+            foreach (EditableImageCanvas editableImage in editableImages)
+            {
+                editableImage.HideEditorChrome();
+            }
+
+            // Force WPF to apply the visibility changes before rendering.
+            iconEditorCanvas.UpdateLayout();
+
+            int width =
+                (int)Math.Ceiling(iconEditorCanvas.ActualWidth);
+
+            int height =
+                (int)Math.Ceiling(iconEditorCanvas.ActualHeight);
+
+            if (width <= 0 || height <= 0)
+            {
+                width = IconSize;
+                height = IconSize;
+            }
+
+            var bitmap =
+                new RenderTargetBitmap(
+                    width,
+                    height,
+                    96,
+                    96,
+                    PixelFormats.Pbgra32);
+
+            bitmap.Render(iconEditorCanvas);
+
+            var encoder =
+                new PngBitmapEncoder();
+
+            encoder.Frames.Add(
+                BitmapFrame.Create(bitmap));
+
+            using FileStream stream =
+                File.Create(outputPath);
+
+            encoder.Save(stream);
         }
+        finally
+        {
+            foreach (EditableImageCanvas editableImage in editableImages)
+            {
+                editableImage.RestoreEditorChrome();
+            }
 
-        var bitmap = new RenderTargetBitmap(
-            width,
-            height,
-            96,
-            96,
-            PixelFormats.Pbgra32);
-
-        bitmap.Render(iconEditorCanvas);
-
-        var encoder = new PngBitmapEncoder();
-
-        encoder.Frames.Add(
-            BitmapFrame.Create(bitmap));
-
-        using FileStream stream = File.Create(outputPath);
-
-        encoder.Save(stream);
+            iconEditorCanvas.UpdateLayout();
+        }
     }
 
     private static void ApplyIconToFolder(

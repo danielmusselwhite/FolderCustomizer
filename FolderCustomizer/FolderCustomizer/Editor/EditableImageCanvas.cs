@@ -1388,4 +1388,22 @@ public sealed class EditableImageCanvas : Canvas
         BottomLeft,
         BottomRight
     }
+
+    public void HideEditorChrome()
+    {
+        _selectionBorder.Visibility = Visibility.Collapsed;
+
+        _topLeftHandle.Visibility = Visibility.Collapsed;
+        _topRightHandle.Visibility = Visibility.Collapsed;
+        _bottomLeftHandle.Visibility = Visibility.Collapsed;
+        _bottomRightHandle.Visibility = Visibility.Collapsed;
+
+        _rotationLine.Visibility = Visibility.Collapsed;
+        _rotationHandle.Visibility = Visibility.Collapsed;
+    }
+
+    public void RestoreEditorChrome()
+    {
+        UpdateChrome();
+    }
 }
