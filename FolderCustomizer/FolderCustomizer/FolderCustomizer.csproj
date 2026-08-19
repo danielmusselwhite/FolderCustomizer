@@ -1,50 +1,46 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-	<TargetFramework>net6.0-windows</TargetFramework>
-	<UseWindowsForms>true</UseWindowsForms>
-    <Nullable>enable</Nullable>
-    <UseWPF>true</UseWPF>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net10.0-windows</TargetFramework>
 
-  <ItemGroup>
-    <None Remove="res\folder.png" />
-    <None Remove="res\images\bases\EmptyFolder.png" />
-    <None Remove="res\images\bases\FullFolder.png" />
-    <None Remove="res\images\bases\OpenedFolder.png" />
-  </ItemGroup>
+		<UseWPF>true</UseWPF>
+		<UseWindowsForms>true</UseWindowsForms>
 
-  <ItemGroup>
-    <PackageReference Include="Costura.Fody" Version="5.7.0">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-  </ItemGroup>
+		<Nullable>enable</Nullable>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <Resource Include="res\images\bases\EmptyFolder.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Resource>
-    <Resource Include="res\images\bases\FullFolder.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Resource>
-  </ItemGroup>
+	<ItemGroup>
+		<None Remove="res\folder.png" />
+		<None Remove="res\images\bases\EmptyFolder.png" />
+		<None Remove="res\images\bases\FullFolder.png" />
+		<None Remove="res\images\bases\OpenedFolder.png" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <Compile Update="Resource1.Designer.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Resource1.resx</DependentUpon>
-    </Compile>
-  </ItemGroup>
+	<ItemGroup>
+		<Resource Include="res\images\bases\EmptyFolder.png">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</Resource>
 
-  <ItemGroup>
-    <EmbeddedResource Update="Resource1.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resource1.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-  </ItemGroup>
+		<Resource Include="res\images\bases\FullFolder.png">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</Resource>
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Update="Resource1.Designer.cs">
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>Resource1.resx</DependentUpon>
+		</Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Update="Resource1.resx">
+			<Generator>ResXFileCodeGenerator</Generator>
+			<LastGenOutput>Resource1.Designer.cs</LastGenOutput>
+		</EmbeddedResource>
+	</ItemGroup>
 
 </Project>

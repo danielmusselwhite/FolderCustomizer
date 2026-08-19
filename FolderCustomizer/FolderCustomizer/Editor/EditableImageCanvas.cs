@@ -1,279 +1,1359 @@
-﻿using Microsoft.Win32;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
 using System.Windows.Shapes;
-using System.Windows.Forms;
-using MouseEventHandler = System.Windows.Input.MouseEventHandler;
-using MouseEventArgs = System.Windows.Input.MouseEventArgs;
-using System.Windows.Automation.Peers;
-using System.Diagnostics;
 
-namespace FolderCustomizer.Editor
+namespace FolderCustomizer.Editor;
+
+public sealed class EditableImageCanvas : Canvas
 {
-    public class EditableImageCanvas : Canvas
+    private const double DefaultSize = 180;
+    private const double MinimumSize = 24;
+
+    private const double HandleSize = 12;
+    private const double HandleHitPadding = 6;
+
+    private const double RotationHandleSize = 14;
+    private const double RotationHandleOffset = 30;
+
+    private static readonly Brush AccentBrush =
+        new SolidColorBrush(Color.FromRgb(0, 103, 192));
+
+    private static readonly Brush HoverBrush =
+        new SolidColorBrush(Color.FromArgb(160, 0, 103, 192));
+
+    private readonly Image _image;
+    private readonly Border _selectionBorder;
+
+    private readonly Rectangle _topLeftHandle;
+    private readonly Rectangle _topRightHandle;
+    private readonly Rectangle _bottomLeftHandle;
+    private readonly Rectangle _bottomRightHandle;
+
+    private readonly Line _rotationLine;
+    private readonly Ellipse _rotationHandle;
+
+    private readonly RotateTransform _rotationTransform;
+
+    private bool _isSelected;
+    private bool _isHovered;
+
+    private InteractionMode _interactionMode;
+    private ResizeCorner _activeResizeCorner;
+
+    // Drag state
+    private Point _dragStartMouse;
+    private double _dragStartLeft;
+    private double _dragStartTop;
+
+    // Resize state
+    private Point _resizeStartMouse;
+
+    private double _resizeStartLeft;
+    private double _resizeStartTop;
+    private double _resizeStartWidth;
+    private double _resizeStartHeight;
+
+    // Rotation state
+    private Point _rotationCentre;
+    private double _rotationStartAngle;
+    private double _rotationStartMouseAngle;
+
+    public EditableImageCanvas(Uri imagePath)
     {
-        protected Rectangle[] rectangles = new Rectangle[5];
-        private Point start;
-        private Point origin;
-        private bool isMouseOverCenterRectangle = false;
-        private bool isMouseOverBottomRightRectangle = false;
+        ArgumentNullException.ThrowIfNull(imagePath);
 
-        public EditableImageCanvas(Uri imagePath)
-        {
-            this.Height = 180;
-            this.Width = 180;
+        Width = DefaultSize;
+        Height = DefaultSize;
 
-            // Ensure the control is focusable
-            this.Focusable = true;
+        Focusable = true;
+        ClipToBounds = false;
+        Background = Brushes.Transparent;
 
+        RenderTransformOrigin = new Point(0.5, 0.5);
 
-            // Add the image as a child
-            Image image = new Image();
-            image.Source = new BitmapImage(imagePath);
-            image.Width = 180;
-            image.Height = 180;
-            image.Stretch = Stretch.Fill;
-            this.Children.Add(image);
+        _rotationTransform = new RotateTransform();
 
-            // Add event handlers for mouse events
-            this.MouseLeftButtonDown += new MouseButtonEventHandler(EditableImageCanvas_MouseLeftButtonDown);
-            this.MouseLeftButtonUp += new MouseButtonEventHandler(EditableImageCanvas_MouseLeftButtonUp);
-            this.MouseMove += new MouseEventHandler(EditableImageCanvas_MouseMove);
-            this.MouseLeave += new MouseEventHandler(EditableImageCanvas_MouseMove);
-            this.MouseEnter += new MouseEventHandler(EditableImageCanvas_MouseEnter);
-            this.MouseLeave += new MouseEventHandler(EditableImageCanvas_MouseLeave);
+        RenderTransform = _rotationTransform;
 
-            // Add event handler for delete key press
-            this.KeyDown += new System.Windows.Input.KeyEventHandler(EditableImageCanvas_KeyDown);
+        _image = CreateImage(imagePath);
 
+        _selectionBorder = CreateSelectionBorder();
 
-            // Add a red rectangle in each corner of the canvas
-            for (int i = 0; i < rectangles.Length; i++)
-            {
-                rectangles[i] = new Rectangle();
-                rectangles[i].Width = 15;
-                rectangles[i].Height = 15;
-                rectangles[i].Fill = Brushes.Red;
-                rectangles[i].Visibility = Visibility.Hidden;
+        _topLeftHandle = CreateResizeHandle(Cursors.SizeNWSE);
+        _topRightHandle = CreateResizeHandle(Cursors.SizeNESW);
+        _bottomLeftHandle = CreateResizeHandle(Cursors.SizeNESW);
+        _bottomRightHandle = CreateResizeHandle(Cursors.SizeNWSE);
 
-                // set the coordinate for each rectangle, in order left-top, right-top, left-bottom, right-bottom
+        _rotationLine = CreateRotationLine();
+        _rotationHandle = CreateRotationHandle();
 
-                switch (i)
-                {
-                    case 0:
-                        rectangles[i].Name = "leftTop";
-                        Canvas.SetLeft(rectangles[i], 0);
-                        Canvas.SetTop(rectangles[i], 0);
-                        break;
-                    case 1:
-                        rectangles[i].Name = "rightTop";
-                        Canvas.SetLeft(rectangles[i], this.Width - rectangles[i].Width);
-                        Canvas.SetTop(rectangles[i], 0);
-                        break;
-                    case 2:
-                        rectangles[i].Name = "leftBottom";
-                        Canvas.SetLeft(rectangles[i], 0);
-                        Canvas.SetTop(rectangles[i], this.Height - rectangles[i].Height);
-                        break;
-                    case 3:
-                        rectangles[i].Name = "rightBottom";
-                        Canvas.SetLeft(rectangles[i], this.Width - rectangles[i].Width);
-                        Canvas.SetTop(rectangles[i], this.Height - rectangles[i].Height);
-                        break;
-                }
+        Children.Add(_image);
 
-                this.Children.Add(rectangles[i]);
+        Children.Add(_selectionBorder);
 
-            }
+        Children.Add(_rotationLine);
 
-            // Add rectangle in the centre
-            rectangles[4] = new Rectangle();
-            rectangles[4].Width = 15;
-            rectangles[4].Height = 15;
-            rectangles[4].Fill = Brushes.Red;
-            rectangles[4].Visibility = Visibility.Hidden;
-            rectangles[4].Name = "center";
-            Canvas.SetLeft(rectangles[4], this.Width / 2 - rectangles[4].Width / 2);
-            Canvas.SetTop(rectangles[4], this.Height / 2 - rectangles[4].Height / 2);
-            this.Children.Add(rectangles[4]);
+        Children.Add(_topLeftHandle);
+        Children.Add(_topRightHandle);
+        Children.Add(_bottomLeftHandle);
+        Children.Add(_bottomRightHandle);
 
+        Children.Add(_rotationHandle);
 
+        MouseEnter += OnMouseEnter;
+        MouseLeave += OnMouseLeave;
 
-        }
+        MouseLeftButtonDown += OnMouseLeftButtonDown;
+        MouseLeftButtonUp += OnMouseLeftButtonUp;
 
-        private void EditableImageCanvas_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
-        {
-            if (e.Key == Key.Delete)
-            {
-                this.Visibility = Visibility.Collapsed;
-            }
-        }
+        MouseMove += OnMouseMove;
 
-        private void EditableImageCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            // Check if the mouse is over any of the rectangles
-            isMouseOverCenterRectangle = IsMouseOverCenterRectangle();
-            isMouseOverBottomRightRectangle = IsMouseOverBottomRightRectangle();
+        KeyDown += OnKeyDown;
 
+        Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
 
-            // Capture and remember the mouse position
-            this.CaptureMouse();
-            start = e.GetPosition(this);
-        }
-
-        private void EditableImageCanvas_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
-        {
-            // Reset the flag when mouse capture is released
-            isMouseOverCenterRectangle = false;
-            isMouseOverBottomRightRectangle = false;
-
-            // Release the mouse capture
-            this.ReleaseMouseCapture();
-        }
-
-        private void EditableImageCanvas_MouseMove(object sender, MouseEventArgs e)
-        {
-            // Move the image if the mouse is captured over the centre rectangle
-            if (this.IsMouseCaptured && isMouseOverCenterRectangle)
-            {
-                // Get the position of the mouse relative to the canvas
-                Point position = e.GetPosition(this.Parent as UIElement);
-
-                // Move the image
-                this.RenderTransform = new TranslateTransform(position.X - start.X + origin.X, position.Y - start.Y + origin.Y);
-            }
-
-            // Resize the canvas and all its children if the mouse is captured over the bottom-right rectangle
-            if (this.IsMouseCaptured && isMouseOverBottomRightRectangle)
-            {
-                // Get the position of the mouse relative to the canvas
-                Point position = e.GetPosition(this);
-
-                // Ensure minimum resize to 40x40
-                position.X = Math.Max(40, position.X);
-                position.Y = Math.Max(40, position.Y);
-
-                ResizeCanvasAndChildren(position);
-                ResizeRectangles();
-            }
-        }
-
-        private void ResizeCanvasAndChildren(Point position)
-        {
-            // Resize the canvas
-            this.Width = position.X;
-            this.Height = position.Y;
-
-            // Resize the image
-            foreach (UIElement element in this.Children)
-            {
-                if (element is Image)
-                {
-                    (element as Image).Width = position.X;
-                    (element as Image).Height = position.Y;
-                    (element as Image).Stretch = Stretch.Fill;
-                }
-            }
-        }
-
-        private void ResizeRectangles()
-        {
-            // Resize the rectangles
-            foreach (Rectangle rectangle in rectangles)
-            {
-                switch (rectangle.Name)
-                {
-                    case "leftTop":
-                        Canvas.SetLeft(rectangle, 0);
-                        Canvas.SetTop(rectangle, 0);
-                        break;
-                    case "rightTop":
-                        Canvas.SetLeft(rectangle, this.Width - rectangle.Width);
-                        Canvas.SetTop(rectangle, 0);
-                        break;
-                    case "leftBottom":
-                        Canvas.SetLeft(rectangle, 0);
-                        Canvas.SetTop(rectangle, this.Height - rectangle.Height);
-                        break;
-                    case "rightBottom":
-                        Canvas.SetLeft(rectangle, this.Width - rectangle.Width);
-                        Canvas.SetTop(rectangle, this.Height - rectangle.Height);
-                        break;
-                    case "center":
-                        Canvas.SetLeft(rectangle, this.Width / 2 - rectangle.Width / 2);
-                        Canvas.SetTop(rectangle, this.Height / 2 - rectangle.Height / 2);
-                        break;
-                }
-            }
-        }
-
-        private void EditableImageCanvas_MouseEnter(object sender, MouseEventArgs e)
-        {
-            // Take focus
-            this.Focus();
-            Keyboard.Focus(this);
-
-            // Show the rectangles
-            foreach (Rectangle rectangle in rectangles)
-            {
-                if(rectangle.Name == "center" || rectangle.Name == "rightBottom")
-                    rectangle.Visibility = Visibility.Visible;
-            }
-        }
-
-        private void EditableImageCanvas_MouseLeave(object sender, MouseEventArgs e)
-        {
-            // Release focus
-            Keyboard.ClearFocus();
-
-            // Hide the rectangles
-            foreach (Rectangle rectangle in rectangles)
-            {
-                rectangle.Visibility = Visibility.Hidden;
-            }
-        }
-
-        private bool IsMouseOverCenterRectangle()
-        {
-            // Get the position of the mouse relative to the canvas
-            Point position = Mouse.GetPosition(this);
-
-            // Check if the mouse is over the center rectangle
-            if (position.X >= Canvas.GetLeft(rectangles[4]) && position.X <= Canvas.GetLeft(rectangles[4]) + rectangles[4].Width &&
-                position.Y >= Canvas.GetTop(rectangles[4]) && position.Y <= Canvas.GetTop(rectangles[4]) + rectangles[4].Height)
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        private bool IsMouseOverBottomRightRectangle()
-        {
-            // Get the position of the mouse relative to the canvas
-            Point position = Mouse.GetPosition(this);
-
-            // Check if the mouse is over the bottom-right rectangle
-            if (position.X >= Canvas.GetLeft(rectangles[3]) && position.X <= Canvas.GetLeft(rectangles[3]) + rectangles[3].Width &&
-                               position.Y >= Canvas.GetTop(rectangles[3]) && position.Y <= Canvas.GetTop(rectangles[3]) + rectangles[3].Height)
-            {
-                return true;
-            }
-
-            return false;
-        }
-
+        UpdateChrome();
     }
 
+    // =====================================================================
+    // Public state
+    // =====================================================================
+
+    public double Rotation => _rotationTransform.Angle;
+
+    // =====================================================================
+    // Creation
+    // =====================================================================
+
+    private static Image CreateImage(Uri imagePath)
+    {
+        var bitmap = new BitmapImage();
+
+        bitmap.BeginInit();
+
+        bitmap.UriSource = imagePath;
+        bitmap.CacheOption = BitmapCacheOption.OnLoad;
+
+        bitmap.EndInit();
+        bitmap.Freeze();
+
+        return new Image
+        {
+            Source = bitmap,
+
+            Stretch = Stretch.Fill,
+
+            SnapsToDevicePixels = true,
+
+            IsHitTestVisible = false
+        };
+    }
+
+    private static Border CreateSelectionBorder()
+    {
+        return new Border
+        {
+            BorderBrush = AccentBrush,
+
+            BorderThickness = new Thickness(1.5),
+
+            Background = Brushes.Transparent,
+
+            IsHitTestVisible = false,
+
+            Visibility = Visibility.Collapsed
+        };
+    }
+
+    private static Rectangle CreateResizeHandle(
+        Cursor cursor)
+    {
+        return new Rectangle
+        {
+            Width = HandleSize,
+            Height = HandleSize,
+
+            RadiusX = 3,
+            RadiusY = 3,
+
+            Fill = AccentBrush,
+
+            Stroke = Brushes.White,
+            StrokeThickness = 2,
+
+            Cursor = cursor,
+
+            Visibility = Visibility.Collapsed
+        };
+    }
+
+    private static Line CreateRotationLine()
+    {
+        return new Line
+        {
+            Stroke = AccentBrush,
+            StrokeThickness = 1.5,
+
+            IsHitTestVisible = false,
+
+            Visibility = Visibility.Collapsed
+        };
+    }
+
+    private static Ellipse CreateRotationHandle()
+    {
+        return new Ellipse
+        {
+            Width = RotationHandleSize,
+            Height = RotationHandleSize,
+
+            Fill = Brushes.White,
+
+            Stroke = AccentBrush,
+            StrokeThickness = 2,
+
+            Cursor = Cursors.Hand,
+
+            Visibility = Visibility.Collapsed
+        };
+    }
+
+    // =====================================================================
+    // Parent canvas
+    // =====================================================================
+
+    private void OnLoaded(
+        object sender,
+        RoutedEventArgs e)
+    {
+        if (Parent is UIElement parent)
+        {
+            parent.PreviewMouseLeftButtonDown +=
+                OnParentPreviewMouseLeftButtonDown;
+        }
+    }
+
+    private void OnUnloaded(
+        object sender,
+        RoutedEventArgs e)
+    {
+        if (Parent is UIElement parent)
+        {
+            parent.PreviewMouseLeftButtonDown -=
+                OnParentPreviewMouseLeftButtonDown;
+        }
+    }
+
+    private void OnParentPreviewMouseLeftButtonDown(
+        object sender,
+        MouseButtonEventArgs e)
+    {
+        if (!_isSelected)
+            return;
+
+        if (e.OriginalSource is not DependencyObject source)
+        {
+            Deselect();
+            return;
+        }
+
+        // Keep selection when clicking anywhere within this element.
+        if (IsDescendantOf(source, this))
+            return;
+
+        Deselect();
+    }
+
+    private static bool IsDescendantOf(
+        DependencyObject element,
+        DependencyObject ancestor)
+    {
+        DependencyObject? current = element;
+
+        while (current is not null)
+        {
+            if (ReferenceEquals(current, ancestor))
+                return true;
+
+            current = VisualTreeHelper.GetParent(current);
+        }
+
+        return false;
+    }
+
+    // =====================================================================
+    // Hover
+    // =====================================================================
+
+    private void OnMouseEnter(
+        object sender,
+        MouseEventArgs e)
+    {
+        _isHovered = true;
+
+        Cursor = Cursors.SizeAll;
+
+        UpdateChrome();
+    }
+
+    private void OnMouseLeave(
+        object sender,
+        MouseEventArgs e)
+    {
+        if (IsMouseCaptured)
+            return;
+
+        _isHovered = false;
+
+        Cursor = Cursors.Arrow;
+
+        UpdateChrome();
+    }
+
+    // =====================================================================
+    // Mouse input
+    // =====================================================================
+
+    private void OnMouseLeftButtonDown(
+        object sender,
+        MouseButtonEventArgs e)
+    {
+        Select();
+
+        ResizeCorner? resizeCorner =
+            GetResizeCornerAtMouse(e);
+
+        if (resizeCorner is not null)
+        {
+            BeginResize(
+                resizeCorner.Value,
+                e);
+
+            e.Handled = true;
+
+            return;
+        }
+
+        if (IsMouseOverRotationHandle(e))
+        {
+            BeginRotation(e);
+
+            e.Handled = true;
+
+            return;
+        }
+
+        BeginDrag(e);
+
+        e.Handled = true;
+    }
+
+    private void OnMouseLeftButtonUp(
+        object sender,
+        MouseButtonEventArgs e)
+    {
+        if (_interactionMode == InteractionMode.None)
+            return;
+
+        _interactionMode =
+            InteractionMode.None;
+
+        ReleaseMouseCapture();
+
+        UpdateChrome();
+
+        e.Handled = true;
+    }
+
+    private void OnMouseMove(
+        object sender,
+        MouseEventArgs e)
+    {
+        if (!IsMouseCaptured)
+        {
+            UpdateCursor(e);
+            return;
+        }
+
+        switch (_interactionMode)
+        {
+            case InteractionMode.Dragging:
+
+                Drag(e);
+
+                break;
+
+            case InteractionMode.Resizing:
+
+                Resize(e);
+
+                break;
+
+            case InteractionMode.Rotating:
+
+                Rotate(e);
+
+                break;
+        }
+    }
+
+    // =====================================================================
+    // Selection
+    // =====================================================================
+
+    private void Select()
+    {
+        // Deselect other overlay images first.
+        if (Parent is Panel parent)
+        {
+            foreach (UIElement child in parent.Children)
+            {
+                if (child is EditableImageCanvas other &&
+                    !ReferenceEquals(other, this))
+                {
+                    other.Deselect();
+                }
+            }
+        }
+
+        _isSelected = true;
+
+        Focus();
+        Keyboard.Focus(this);
+
+        UpdateChrome();
+    }
+
+    private void Deselect()
+    {
+        if (IsMouseCaptured)
+            ReleaseMouseCapture();
+
+        _interactionMode =
+            InteractionMode.None;
+
+        _isSelected = false;
+
+        UpdateChrome();
+    }
+
+    // =====================================================================
+    // Drag
+    // =====================================================================
+
+    private void BeginDrag(
+        MouseButtonEventArgs e)
+    {
+        if (Parent is not Canvas parent)
+            return;
+
+        _interactionMode =
+            InteractionMode.Dragging;
+
+        _dragStartMouse =
+            e.GetPosition(parent);
+
+        _dragStartLeft =
+            GetCanvasLeft();
+
+        _dragStartTop =
+            GetCanvasTop();
+
+        Cursor = Cursors.SizeAll;
+
+        CaptureMouse();
+    }
+
+    private void Drag(
+        MouseEventArgs e)
+    {
+        if (Parent is not Canvas parent)
+            return;
+
+        Point mouse =
+            e.GetPosition(parent);
+
+        Vector movement =
+            mouse -
+            _dragStartMouse;
+
+        double left =
+            _dragStartLeft +
+            movement.X;
+
+        double top =
+            _dragStartTop +
+            movement.Y;
+
+        double maxLeft =
+            Math.Max(
+                0,
+                parent.ActualWidth - Width);
+
+        double maxTop =
+            Math.Max(
+                0,
+                parent.ActualHeight - Height);
+
+        left = Math.Clamp(
+            left,
+            0,
+            maxLeft);
+
+        top = Math.Clamp(
+            top,
+            0,
+            maxTop);
+
+        SetLeft(this, left);
+        SetTop(this, top);
+    }
+
+    // =====================================================================
+    // Resize
+    // =====================================================================
+
+    private void BeginResize(
+        ResizeCorner corner,
+        MouseButtonEventArgs e)
+    {
+        if (Parent is not Canvas parent)
+            return;
+
+        _interactionMode =
+            InteractionMode.Resizing;
+
+        _activeResizeCorner =
+            corner;
+
+        _resizeStartMouse =
+            e.GetPosition(parent);
+
+        _resizeStartLeft =
+            GetCanvasLeft();
+
+        _resizeStartTop =
+            GetCanvasTop();
+
+        _resizeStartWidth =
+            Width;
+
+        _resizeStartHeight =
+            Height;
+
+        CaptureMouse();
+
+        UpdateCursorForCorner(corner);
+    }
+
+    private void Resize(
+        MouseEventArgs e)
+    {
+        if (Parent is not Canvas parent)
+            return;
+
+        Point currentMouse =
+            e.GetPosition(parent);
+
+        Vector screenDelta =
+            currentMouse -
+            _resizeStartMouse;
+
+        // Convert the mouse movement back into the image's local axes
+        // so resizing still behaves naturally after rotation.
+        Vector delta =
+            RotateVector(
+                screenDelta,
+                -_rotationTransform.Angle);
+
+        bool fromCentre =
+            Keyboard.Modifiers.HasFlag(
+                ModifierKeys.Control);
+
+        bool preserveAspectRatio =
+            Keyboard.Modifiers.HasFlag(
+                ModifierKeys.Shift);
+
+        bool leftCorner =
+            _activeResizeCorner is
+                ResizeCorner.TopLeft or
+                ResizeCorner.BottomLeft;
+
+        bool topCorner =
+            _activeResizeCorner is
+                ResizeCorner.TopLeft or
+                ResizeCorner.TopRight;
+
+        double horizontalDirection =
+            leftCorner
+                ? -1
+                : 1;
+
+        double verticalDirection =
+            topCorner
+                ? -1
+                : 1;
+
+        double widthDelta =
+            delta.X *
+            horizontalDirection;
+
+        double heightDelta =
+            delta.Y *
+            verticalDirection;
+
+        if (fromCentre)
+        {
+            widthDelta *= 2;
+            heightDelta *= 2;
+        }
+
+        double newWidth =
+            Math.Max(
+                MinimumSize,
+                _resizeStartWidth +
+                widthDelta);
+
+        double newHeight =
+            Math.Max(
+                MinimumSize,
+                _resizeStartHeight +
+                heightDelta);
+
+        if (preserveAspectRatio)
+        {
+            double scaleX =
+                newWidth /
+                _resizeStartWidth;
+
+            double scaleY =
+                newHeight /
+                _resizeStartHeight;
+
+            double scale =
+                Math.Abs(scaleX - 1) >
+                Math.Abs(scaleY - 1)
+                    ? scaleX
+                    : scaleY;
+
+            scale = Math.Max(
+                MinimumSize /
+                Math.Min(
+                    _resizeStartWidth,
+                    _resizeStartHeight),
+                scale);
+
+            newWidth =
+                _resizeStartWidth *
+                scale;
+
+            newHeight =
+                _resizeStartHeight *
+                scale;
+        }
+
+        ApplyResize(
+            newWidth,
+            newHeight,
+            leftCorner,
+            topCorner,
+            fromCentre,
+            parent);
+
+        UpdateChrome();
+    }
+
+    private void ApplyResize(
+        double newWidth,
+        double newHeight,
+        bool leftCorner,
+        bool topCorner,
+        bool fromCentre,
+        Canvas parent)
+    {
+        double startRight =
+            _resizeStartLeft +
+            _resizeStartWidth;
+
+        double startBottom =
+            _resizeStartTop +
+            _resizeStartHeight;
+
+        double centreX =
+            _resizeStartLeft +
+            (_resizeStartWidth / 2);
+
+        double centreY =
+            _resizeStartTop +
+            (_resizeStartHeight / 2);
+
+        double newLeft;
+        double newTop;
+
+        if (fromCentre)
+        {
+            double maximumWidth =
+                2 *
+                Math.Min(
+                    centreX,
+                    parent.ActualWidth - centreX);
+
+            double maximumHeight =
+                2 *
+                Math.Min(
+                    centreY,
+                    parent.ActualHeight - centreY);
+
+            newWidth =
+                Math.Clamp(
+                    newWidth,
+                    MinimumSize,
+                    Math.Max(
+                        MinimumSize,
+                        maximumWidth));
+
+            newHeight =
+                Math.Clamp(
+                    newHeight,
+                    MinimumSize,
+                    Math.Max(
+                        MinimumSize,
+                        maximumHeight));
+
+            newLeft =
+                centreX -
+                (newWidth / 2);
+
+            newTop =
+                centreY -
+                (newHeight / 2);
+        }
+        else
+        {
+            if (leftCorner)
+            {
+                newWidth =
+                    Math.Min(
+                        newWidth,
+                        startRight);
+
+                newLeft =
+                    startRight -
+                    newWidth;
+            }
+            else
+            {
+                newLeft =
+                    _resizeStartLeft;
+
+                newWidth =
+                    Math.Min(
+                        newWidth,
+                        parent.ActualWidth -
+                        newLeft);
+            }
+
+            if (topCorner)
+            {
+                newHeight =
+                    Math.Min(
+                        newHeight,
+                        startBottom);
+
+                newTop =
+                    startBottom -
+                    newHeight;
+            }
+            else
+            {
+                newTop =
+                    _resizeStartTop;
+
+                newHeight =
+                    Math.Min(
+                        newHeight,
+                        parent.ActualHeight -
+                        newTop);
+            }
+        }
+
+        Width =
+            Math.Max(
+                MinimumSize,
+                newWidth);
+
+        Height =
+            Math.Max(
+                MinimumSize,
+                newHeight);
+
+        SetLeft(
+            this,
+            Math.Max(0, newLeft));
+
+        SetTop(
+            this,
+            Math.Max(0, newTop));
+    }
+
+    // =====================================================================
+    // Rotation
+    // =====================================================================
+
+    private void BeginRotation(
+        MouseButtonEventArgs e)
+    {
+        if (Parent is not Canvas parent)
+            return;
+
+        _interactionMode =
+            InteractionMode.Rotating;
+
+        double left =
+            GetCanvasLeft();
+
+        double top =
+            GetCanvasTop();
+
+        _rotationCentre =
+            new Point(
+                left + (Width / 2),
+                top + (Height / 2));
+
+        Point mouse =
+            e.GetPosition(parent);
+
+        _rotationStartMouseAngle =
+            CalculateAngle(
+                _rotationCentre,
+                mouse);
+
+        _rotationStartAngle =
+            _rotationTransform.Angle;
+
+        Cursor = Cursors.Hand;
+
+        CaptureMouse();
+    }
+
+    private void Rotate(
+        MouseEventArgs e)
+    {
+        if (Parent is not Canvas parent)
+            return;
+
+        Point mouse =
+            e.GetPosition(parent);
+
+        double currentMouseAngle =
+            CalculateAngle(
+                _rotationCentre,
+                mouse);
+
+        double delta =
+            currentMouseAngle -
+            _rotationStartMouseAngle;
+
+        double angle =
+            _rotationStartAngle +
+            delta;
+
+        // Shift while rotating snaps to 15 degree increments.
+        if (Keyboard.Modifiers.HasFlag(
+                ModifierKeys.Shift))
+        {
+            angle =
+                Math.Round(angle / 15) *
+                15;
+        }
+
+        _rotationTransform.Angle =
+            NormalizeAngle(angle);
+    }
+
+    private static double CalculateAngle(
+        Point centre,
+        Point point)
+    {
+        double radians =
+            Math.Atan2(
+                point.Y - centre.Y,
+                point.X - centre.X);
+
+        return radians *
+               180 /
+               Math.PI;
+    }
+
+    private static double NormalizeAngle(
+        double angle)
+    {
+        angle %= 360;
+
+        if (angle < 0)
+            angle += 360;
+
+        return angle;
+    }
+
+    // =====================================================================
+    // Keyboard
+    // =====================================================================
+
+    private void OnKeyDown(
+        object sender,
+        KeyEventArgs e)
+    {
+        switch (e.Key)
+        {
+            case Key.Delete:
+            case Key.Back:
+
+                RemoveFromEditor();
+
+                e.Handled = true;
+
+                break;
+
+            case Key.Left:
+
+                Nudge(-GetNudgeAmount(), 0);
+
+                e.Handled = true;
+
+                break;
+
+            case Key.Right:
+
+                Nudge(GetNudgeAmount(), 0);
+
+                e.Handled = true;
+
+                break;
+
+            case Key.Up:
+
+                Nudge(0, -GetNudgeAmount());
+
+                e.Handled = true;
+
+                break;
+
+            case Key.Down:
+
+                Nudge(0, GetNudgeAmount());
+
+                e.Handled = true;
+
+                break;
+        }
+    }
+
+    private static double GetNudgeAmount()
+    {
+        return Keyboard.Modifiers.HasFlag(
+            ModifierKeys.Shift)
+                ? 10
+                : 1;
+    }
+
+    private void Nudge(
+        double x,
+        double y)
+    {
+        if (Parent is not Canvas parent)
+            return;
+
+        double left =
+            Math.Clamp(
+                GetCanvasLeft() + x,
+                0,
+                Math.Max(
+                    0,
+                    parent.ActualWidth - Width));
+
+        double top =
+            Math.Clamp(
+                GetCanvasTop() + y,
+                0,
+                Math.Max(
+                    0,
+                    parent.ActualHeight - Height));
+
+        SetLeft(this, left);
+        SetTop(this, top);
+    }
+
+    private void RemoveFromEditor()
+    {
+        ReleaseMouseCapture();
+
+        if (Parent is Panel parent)
+            parent.Children.Remove(this);
+    }
+
+    // =====================================================================
+    // Chrome
+    // =====================================================================
+
+    protected override Size ArrangeOverride(
+        Size arrangeSize)
+    {
+        Size result =
+            base.ArrangeOverride(arrangeSize);
+
+        UpdateChrome();
+
+        return result;
+    }
+
+    private void UpdateChrome()
+    {
+        double width =
+            GetCurrentWidth();
+
+        double height =
+            GetCurrentHeight();
+
+        _image.Width = width;
+        _image.Height = height;
+
+        SetLeft(_image, 0);
+        SetTop(_image, 0);
+
+        // Selection / hover border.
+        _selectionBorder.Width = width;
+        _selectionBorder.Height = height;
+
+        SetLeft(_selectionBorder, 0);
+        SetTop(_selectionBorder, 0);
+
+        if (_isSelected)
+        {
+            _selectionBorder.BorderBrush =
+                AccentBrush;
+
+            _selectionBorder.Opacity = 1;
+
+            _selectionBorder.Visibility =
+                Visibility.Visible;
+        }
+        else if (_isHovered)
+        {
+            _selectionBorder.BorderBrush =
+                HoverBrush;
+
+            _selectionBorder.Opacity = 0.8;
+
+            _selectionBorder.Visibility =
+                Visibility.Visible;
+        }
+        else
+        {
+            _selectionBorder.Visibility =
+                Visibility.Collapsed;
+        }
+
+        // Corner handles.
+        PositionHandle(
+            _topLeftHandle,
+            -(HandleSize / 2),
+            -(HandleSize / 2));
+
+        PositionHandle(
+            _topRightHandle,
+            width - (HandleSize / 2),
+            -(HandleSize / 2));
+
+        PositionHandle(
+            _bottomLeftHandle,
+            -(HandleSize / 2),
+            height - (HandleSize / 2));
+
+        PositionHandle(
+            _bottomRightHandle,
+            width - (HandleSize / 2),
+            height - (HandleSize / 2));
+
+        // Rotation connection line.
+        _rotationLine.X1 =
+            width / 2;
+
+        _rotationLine.Y1 = 0;
+
+        _rotationLine.X2 =
+            width / 2;
+
+        _rotationLine.Y2 =
+            -RotationHandleOffset +
+            (RotationHandleSize / 2);
+
+        // Rotation handle.
+        SetLeft(
+            _rotationHandle,
+            (width / 2) -
+            (RotationHandleSize / 2));
+
+        SetTop(
+            _rotationHandle,
+            -RotationHandleOffset);
+
+        Visibility handleVisibility =
+            _isSelected
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+
+        _topLeftHandle.Visibility =
+            handleVisibility;
+
+        _topRightHandle.Visibility =
+            handleVisibility;
+
+        _bottomLeftHandle.Visibility =
+            handleVisibility;
+
+        _bottomRightHandle.Visibility =
+            handleVisibility;
+
+        _rotationLine.Visibility =
+            handleVisibility;
+
+        _rotationHandle.Visibility =
+            handleVisibility;
+    }
+
+    private static void PositionHandle(
+        FrameworkElement handle,
+        double left,
+        double top)
+    {
+        SetLeft(handle, left);
+        SetTop(handle, top);
+    }
+
+    // =====================================================================
+    // Hit testing
+    // =====================================================================
+
+    private ResizeCorner? GetResizeCornerAtMouse(
+        MouseEventArgs e)
+    {
+        if (!_isSelected)
+            return null;
+
+        Point position =
+            e.GetPosition(this);
+
+        if (IsInsideHandle(
+                position,
+                _topLeftHandle))
+        {
+            return ResizeCorner.TopLeft;
+        }
+
+        if (IsInsideHandle(
+                position,
+                _topRightHandle))
+        {
+            return ResizeCorner.TopRight;
+        }
+
+        if (IsInsideHandle(
+                position,
+                _bottomLeftHandle))
+        {
+            return ResizeCorner.BottomLeft;
+        }
+
+        if (IsInsideHandle(
+                position,
+                _bottomRightHandle))
+        {
+            return ResizeCorner.BottomRight;
+        }
+
+        return null;
+    }
+
+    private bool IsMouseOverRotationHandle(
+        MouseEventArgs e)
+    {
+        if (!_isSelected)
+            return false;
+
+        Point position =
+            e.GetPosition(this);
+
+        return IsInsideHandle(
+            position,
+            _rotationHandle);
+    }
+
+    private static bool IsInsideHandle(
+        Point point,
+        FrameworkElement handle)
+    {
+        double left =
+            GetLeft(handle);
+
+        double top =
+            GetTop(handle);
+
+        return
+            point.X >=
+                left - HandleHitPadding &&
+            point.X <=
+                left +
+                handle.Width +
+                HandleHitPadding &&
+            point.Y >=
+                top -
+                HandleHitPadding &&
+            point.Y <=
+                top +
+                handle.Height +
+                HandleHitPadding;
+    }
+
+    // =====================================================================
+    // Cursor
+    // =====================================================================
+
+    private void UpdateCursor(
+        MouseEventArgs e)
+    {
+        if (!_isSelected)
+        {
+            Cursor = Cursors.SizeAll;
+            return;
+        }
+
+        ResizeCorner? corner =
+            GetResizeCornerAtMouse(e);
+
+        if (corner is not null)
+        {
+            UpdateCursorForCorner(
+                corner.Value);
+
+            return;
+        }
+
+        if (IsMouseOverRotationHandle(e))
+        {
+            Cursor = Cursors.Hand;
+            return;
+        }
+
+        Cursor = Cursors.SizeAll;
+    }
+
+    private void UpdateCursorForCorner(
+        ResizeCorner corner)
+    {
+        Cursor =
+            corner switch
+            {
+                ResizeCorner.TopLeft
+                    => Cursors.SizeNWSE,
+
+                ResizeCorner.BottomRight
+                    => Cursors.SizeNWSE,
+
+                ResizeCorner.TopRight
+                    => Cursors.SizeNESW,
+
+                ResizeCorner.BottomLeft
+                    => Cursors.SizeNESW,
+
+                _
+                    => Cursors.Arrow
+            };
+    }
+
+    // =====================================================================
+    // Helpers
+    // =====================================================================
+
+    private double GetCanvasLeft()
+    {
+        double value =
+            GetLeft(this);
+
+        return double.IsNaN(value)
+            ? 0
+            : value;
+    }
+
+    private double GetCanvasTop()
+    {
+        double value =
+            GetTop(this);
+
+        return double.IsNaN(value)
+            ? 0
+            : value;
+    }
+
+    private double GetCurrentWidth()
+    {
+        return double.IsNaN(Width)
+            ? ActualWidth
+            : Width;
+    }
+
+    private double GetCurrentHeight()
+    {
+        return double.IsNaN(Height)
+            ? ActualHeight
+            : Height;
+    }
+
+    private static Vector RotateVector(
+        Vector vector,
+        double degrees)
+    {
+        double radians =
+            degrees *
+            Math.PI /
+            180;
+
+        double cos =
+            Math.Cos(radians);
+
+        double sin =
+            Math.Sin(radians);
+
+        return new Vector(
+            (vector.X * cos) -
+            (vector.Y * sin),
+
+            (vector.X * sin) +
+            (vector.Y * cos));
+    }
+
+    // =====================================================================
+    // Internal state
+    // =====================================================================
+
+    private enum InteractionMode
+    {
+        None,
+        Dragging,
+        Resizing,
+        Rotating
+    }
+
+    private enum ResizeCorner
+    {
+        TopLeft,
+        TopRight,
+        BottomLeft,
+        BottomRight
+    }
 }

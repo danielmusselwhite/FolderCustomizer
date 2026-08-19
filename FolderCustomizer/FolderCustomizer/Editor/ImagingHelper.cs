@@ -1,109 +1,253 @@
-﻿using System.Drawing.Imaging;
-using System.Drawing;
+﻿using System;
 using System.IO;
-/// <summary>
-/// Provides helper methods for imaging
-/// https://gist.github.com/darkfall/1656050
-/// </summary>
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+
+namespace FolderCustomizer;
+
 public static class ImagingHelper
 {
+    private const int MaxIconSize = 256;
+    private const int IconDirectorySize = 6;
+    private const int IconDirectoryEntrySize = 16;
+
     /// <summary>
-    /// Converts a PNG image to a icon (ico)
+    /// Converts an image stream to a single-image ICO file.
     /// </summary>
-    /// <param name="input">The input stream</param>
-    /// <param name="output">The output stream</param>
-    /// <param name="size">The size (16x16 px by default)</param>
-    /// <param name="preserveAspectRatio">Preserve the aspect ratio</param>
-    /// <returns>Wether or not the icon was succesfully generated</returns>
-    public static bool ConvertToIcon(Stream input, Stream output, int size = 16, bool preserveAspectRatio = false)
+    /// <param name="input">
+    /// Stream containing a supported image such as PNG, JPEG or BMP.
+    /// </param>
+    /// <param name="output">
+    /// Stream to which the ICO file will be written.
+    /// </param>
+    /// <param name="size">
+    /// Maximum icon dimension. Valid values are 1 through 256.
+    /// </param>
+    /// <param name="preserveAspectRatio">
+    /// Whether to preserve the source image's aspect ratio.
+    /// </param>
+    public static void ConvertToIcon(
+        Stream input,
+        Stream output,
+        int size = MaxIconSize,
+        bool preserveAspectRatio = true)
     {
-        Bitmap inputBitmap = (Bitmap)Bitmap.FromStream(input);
-        if (inputBitmap != null)
+        ArgumentNullException.ThrowIfNull(input);
+        ArgumentNullException.ThrowIfNull(output);
+
+        if (!input.CanRead)
+            throw new ArgumentException(
+                "The input stream must be readable.",
+                nameof(input));
+
+        if (!output.CanWrite)
+            throw new ArgumentException(
+                "The output stream must be writable.",
+                nameof(output));
+
+        if (size is < 1 or > MaxIconSize)
         {
-            int width, height;
-            if (preserveAspectRatio)
-            {
-                width = size;
-                height = inputBitmap.Height / inputBitmap.Width * size;
-            }
-            else
-            {
-                width = height = size;
-            }
-            Bitmap newBitmap = new Bitmap(inputBitmap, new Size(width, height));
-            if (newBitmap != null)
-            {
-                // save the resized png into a memory stream for future use
-                using (MemoryStream memoryStream = new MemoryStream())
-                {
-                    newBitmap.Save(memoryStream, ImageFormat.Png);
-
-                    BinaryWriter iconWriter = new BinaryWriter(output);
-                    if (output != null && iconWriter != null)
-                    {
-                        // 0-1 reserved, 0
-                        iconWriter.Write((byte)0);
-                        iconWriter.Write((byte)0);
-
-                        // 2-3 image type, 1 = icon, 2 = cursor
-                        iconWriter.Write((short)1);
-
-                        // 4-5 number of images
-                        iconWriter.Write((short)1);
-
-                        // image entry 1
-                        // 0 image width
-                        iconWriter.Write((byte)width);
-                        // 1 image height
-                        iconWriter.Write((byte)height);
-
-                        // 2 number of colors
-                        iconWriter.Write((byte)0);
-
-                        // 3 reserved
-                        iconWriter.Write((byte)0);
-
-                        // 4-5 color planes
-                        iconWriter.Write((short)0);
-
-                        // 6-7 bits per pixel
-                        iconWriter.Write((short)32);
-
-                        // 8-11 size of image data
-                        iconWriter.Write((int)memoryStream.Length);
-
-                        // 12-15 offset of image data
-                        iconWriter.Write((int)(6 + 16));
-
-                        // write image data
-                        // png data must contain the whole png data file
-                        iconWriter.Write(memoryStream.ToArray());
-
-                        iconWriter.Flush();
-
-                        return true;
-                    }
-                }
-            }
-            return false;
+            throw new ArgumentOutOfRangeException(
+                nameof(size),
+                size,
+                $"Icon size must be between 1 and {MaxIconSize} pixels.");
         }
-        return false;
+
+        BitmapSource source = LoadBitmap(input);
+
+        (int width, int height) = CalculateDimensions(
+            source.PixelWidth,
+            source.PixelHeight,
+            size,
+            preserveAspectRatio);
+
+        BitmapSource resizedImage = ResizeImage(
+            source,
+            width,
+            height);
+
+        byte[] pngData = EncodeAsPng(resizedImage);
+
+        WriteIcon(
+            output,
+            pngData,
+            width,
+            height);
     }
 
     /// <summary>
-    /// Converts a PNG image to a icon (ico)
+    /// Converts an image file to a single-image ICO file.
     /// </summary>
-    /// <param name="inputPath">The input path</param>
-    /// <param name="outputPath">The output path</param>
-    /// <param name="size">The size (16x16 px by default)</param>
-    /// <param name="preserveAspectRatio">Preserve the aspect ratio</param>
-    /// <returns>Wether or not the icon was succesfully generated</returns>
-    public static bool ConvertToIcon(string inputPath, string outputPath, int size = 16, bool preserveAspectRatio = false)
+    public static void ConvertToIcon(
+        string inputPath,
+        string outputPath,
+        int size = MaxIconSize,
+        bool preserveAspectRatio = true)
     {
-        using (FileStream inputStream = new FileStream(inputPath, FileMode.Open))
-        using (FileStream outputStream = new FileStream(outputPath, FileMode.OpenOrCreate))
+        ArgumentException.ThrowIfNullOrWhiteSpace(inputPath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(outputPath);
+
+        using FileStream input = new(
+            inputPath,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.Read);
+
+        using FileStream output = new(
+            outputPath,
+            FileMode.Create,
+            FileAccess.Write,
+            FileShare.None);
+
+        ConvertToIcon(
+            input,
+            output,
+            size,
+            preserveAspectRatio);
+    }
+
+    private static BitmapSource LoadBitmap(Stream stream)
+    {
+        var decoder = BitmapDecoder.Create(
+            stream,
+            BitmapCreateOptions.PreservePixelFormat,
+            BitmapCacheOption.OnLoad);
+
+        if (decoder.Frames.Count == 0)
+            throw new InvalidDataException(
+                "The image does not contain a valid bitmap frame.");
+
+        BitmapFrame frame = decoder.Frames[0];
+
+        // Convert to a predictable 32-bit format for the icon.
+        var converted = new FormatConvertedBitmap(
+            frame,
+            PixelFormats.Bgra32,
+            null,
+            0);
+
+        converted.Freeze();
+
+        return converted;
+    }
+
+    private static (int Width, int Height) CalculateDimensions(
+        int sourceWidth,
+        int sourceHeight,
+        int size,
+        bool preserveAspectRatio)
+    {
+        if (!preserveAspectRatio)
+            return (size, size);
+
+        double scale = Math.Min(
+            (double)size / sourceWidth,
+            (double)size / sourceHeight);
+
+        int width = Math.Max(
+            1,
+            (int)Math.Round(sourceWidth * scale));
+
+        int height = Math.Max(
+            1,
+            (int)Math.Round(sourceHeight * scale));
+
+        return (width, height);
+    }
+
+    private static BitmapSource ResizeImage(
+        BitmapSource source,
+        int width,
+        int height)
+    {
+        if (source.PixelWidth == width &&
+            source.PixelHeight == height)
         {
-            return ConvertToIcon(inputStream, outputStream, size, preserveAspectRatio);
+            return source;
         }
+
+        double scaleX =
+            (double)width / source.PixelWidth;
+
+        double scaleY =
+            (double)height / source.PixelHeight;
+
+        var resized = new TransformedBitmap(
+            source,
+            new ScaleTransform(scaleX, scaleY));
+
+        resized.Freeze();
+
+        return resized;
+    }
+
+    private static byte[] EncodeAsPng(
+        BitmapSource bitmap)
+    {
+        var encoder = new PngBitmapEncoder();
+
+        encoder.Frames.Add(
+            BitmapFrame.Create(bitmap));
+
+        using var stream = new MemoryStream();
+
+        encoder.Save(stream);
+
+        return stream.ToArray();
+    }
+
+    private static void WriteIcon(
+        Stream output,
+        byte[] pngData,
+        int width,
+        int height)
+    {
+        // Width/height use 0 to represent 256 in the ICO format.
+        byte iconWidth =
+            width == MaxIconSize
+                ? (byte)0
+                : checked((byte)width);
+
+        byte iconHeight =
+            height == MaxIconSize
+                ? (byte)0
+                : checked((byte)height);
+
+        if (output.CanSeek)
+        {
+            output.Position = 0;
+            output.SetLength(0);
+        }
+
+        using var writer = new BinaryWriter(
+            output,
+            System.Text.Encoding.UTF8,
+            leaveOpen: true);
+
+        // ICONDIR
+        writer.Write((ushort)0); // Reserved
+        writer.Write((ushort)1); // Type: icon
+        writer.Write((ushort)1); // Number of images
+
+        // ICONDIRENTRY
+        writer.Write(iconWidth);
+        writer.Write(iconHeight);
+
+        writer.Write((byte)0);   // Colour palette count
+        writer.Write((byte)0);   // Reserved
+
+        writer.Write((ushort)1); // Colour planes
+        writer.Write((ushort)32); // Bits per pixel
+
+        writer.Write((uint)pngData.Length);
+
+        writer.Write(
+            (uint)(IconDirectorySize +
+                   IconDirectoryEntrySize));
+
+        // PNG image data
+        writer.Write(pngData);
+
+        writer.Flush();
     }
 }
