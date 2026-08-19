@@ -10,6 +10,7 @@ namespace FolderCustomizer.Editor;
 
 public sealed class EditableImageCanvas : Canvas
 {
+    private bool _isEditorChromeSuppressed;
     private const double DefaultSize = 180;
     private const double MinimumSize = 24;
 
@@ -1058,40 +1059,17 @@ public sealed class EditableImageCanvas : Canvas
         SetLeft(_image, 0);
         SetTop(_image, 0);
 
-        // Selection / hover border.
         _selectionBorder.Width = width;
         _selectionBorder.Height = height;
 
         SetLeft(_selectionBorder, 0);
         SetTop(_selectionBorder, 0);
 
-        if (_isSelected)
-        {
-            _selectionBorder.BorderBrush =
-                AccentBrush;
 
-            _selectionBorder.Opacity = 1;
+        // -------------------------------------------------------------
+        // Position handles
+        // -------------------------------------------------------------
 
-            _selectionBorder.Visibility =
-                Visibility.Visible;
-        }
-        else if (_isHovered)
-        {
-            _selectionBorder.BorderBrush =
-                HoverBrush;
-
-            _selectionBorder.Opacity = 0.8;
-
-            _selectionBorder.Visibility =
-                Visibility.Visible;
-        }
-        else
-        {
-            _selectionBorder.Visibility =
-                Visibility.Collapsed;
-        }
-
-        // Corner handles.
         PositionHandle(
             _topLeftHandle,
             -(HandleSize / 2),
@@ -1112,11 +1090,16 @@ public sealed class EditableImageCanvas : Canvas
             width - (HandleSize / 2),
             height - (HandleSize / 2));
 
-        // Rotation connection line.
+
+        // -------------------------------------------------------------
+        // Rotation control
+        // -------------------------------------------------------------
+
         _rotationLine.X1 =
             width / 2;
 
-        _rotationLine.Y1 = 0;
+        _rotationLine.Y1 =
+            0;
 
         _rotationLine.X2 =
             width / 2;
@@ -1125,7 +1108,6 @@ public sealed class EditableImageCanvas : Canvas
             -RotationHandleOffset +
             (RotationHandleSize / 2);
 
-        // Rotation handle.
         SetLeft(
             _rotationHandle,
             (width / 2) -
@@ -1134,6 +1116,72 @@ public sealed class EditableImageCanvas : Canvas
         SetTop(
             _rotationHandle,
             -RotationHandleOffset);
+
+
+        // -------------------------------------------------------------
+        // IMPORTANT:
+        // Never show editor chrome while rendering/exporting.
+        // -------------------------------------------------------------
+
+        if (_isEditorChromeSuppressed)
+        {
+            _selectionBorder.Visibility =
+                Visibility.Collapsed;
+
+            _topLeftHandle.Visibility =
+                Visibility.Collapsed;
+
+            _topRightHandle.Visibility =
+                Visibility.Collapsed;
+
+            _bottomLeftHandle.Visibility =
+                Visibility.Collapsed;
+
+            _bottomRightHandle.Visibility =
+                Visibility.Collapsed;
+
+            _rotationLine.Visibility =
+                Visibility.Collapsed;
+
+            _rotationHandle.Visibility =
+                Visibility.Collapsed;
+
+            return;
+        }
+
+
+        // -------------------------------------------------------------
+        // Normal selection / hover state
+        // -------------------------------------------------------------
+
+        if (_isSelected)
+        {
+            _selectionBorder.BorderBrush =
+                AccentBrush;
+
+            _selectionBorder.Opacity =
+                1;
+
+            _selectionBorder.Visibility =
+                Visibility.Visible;
+        }
+        else if (_isHovered)
+        {
+            _selectionBorder.BorderBrush =
+                HoverBrush;
+
+            _selectionBorder.Opacity =
+                0.8;
+
+            _selectionBorder.Visibility =
+                Visibility.Visible;
+        }
+        else
+        {
+            _selectionBorder.Visibility =
+                Visibility.Collapsed;
+        }
+
 
         Visibility handleVisibility =
             _isSelected
@@ -1388,22 +1436,17 @@ public sealed class EditableImageCanvas : Canvas
         BottomLeft,
         BottomRight
     }
-
     public void HideEditorChrome()
     {
-        _selectionBorder.Visibility = Visibility.Collapsed;
+        _isEditorChromeSuppressed = true;
 
-        _topLeftHandle.Visibility = Visibility.Collapsed;
-        _topRightHandle.Visibility = Visibility.Collapsed;
-        _bottomLeftHandle.Visibility = Visibility.Collapsed;
-        _bottomRightHandle.Visibility = Visibility.Collapsed;
-
-        _rotationLine.Visibility = Visibility.Collapsed;
-        _rotationHandle.Visibility = Visibility.Collapsed;
+        UpdateChrome();
     }
 
     public void RestoreEditorChrome()
     {
+        _isEditorChromeSuppressed = false;
+
         UpdateChrome();
     }
 }
