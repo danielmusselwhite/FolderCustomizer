@@ -8,6 +8,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using FolderCustomizer.Services;
 
 using DrawingColor = System.Drawing.Color;
 using FormsColorDialog = System.Windows.Forms.ColorDialog;
@@ -29,16 +30,26 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-
-        InitializeBaseStyles();
+        InitializeFolderIcon();
     }
 
-    private void InitializeBaseStyles()
+    private void InitializeFolderIcon()
     {
-        cbx_Bases.Items.Add("EmptyFolder");
-        cbx_Bases.Items.Add("FullFolder");
+        BitmapSource source =
+            WindowsFolderIconProvider.GetDefaultFolderIcon();
 
-        cbx_Bases.SelectedIndex = 0;
+        _folderIcon = new Image
+        {
+            Width = IconSize,
+            Height = IconSize,
+            Stretch = Stretch.Uniform,
+            IsHitTestVisible = false,
+            Source = source
+        };
+
+        iconEditorCanvas.Children.Insert(
+            0,
+            _folderIcon);
     }
 
     // ---------------------------------------------------------------------
@@ -57,54 +68,6 @@ public partial class MainWindow : Window
 
         _folderPath = dialog.FolderName;
         txt_SelectedFolder.Text = _folderPath;
-    }
-
-    // ---------------------------------------------------------------------
-    // Base folder image
-    // ---------------------------------------------------------------------
-
-    private void Cbx_ColourChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (!IsLoaded && cbx_Bases.SelectedItem is null)
-            return;
-
-        UpdateBaseImage();
-    }
-
-    private void UpdateBaseImage()
-    {
-        if (cbx_Bases.SelectedItem is not string selectedBase)
-            return;
-
-        BitmapSource source = LoadBaseImage(selectedBase);
-
-        if (_selectedFolderColor is MediaColor selectedColor)
-            source = ApplyColor(source, selectedColor);
-
-        if (_folderIcon is null)
-        {
-            _folderIcon = new Image
-            {
-                Width = IconSize,
-                Height = IconSize,
-                Stretch = Stretch.Fill,
-                IsHitTestVisible = false
-            };
-
-            // Always keep the folder itself behind overlay images.
-            iconEditorCanvas.Children.Insert(0, _folderIcon);
-        }
-
-        _folderIcon.Source = source;
-    }
-
-    private static BitmapImage LoadBaseImage(string baseName)
-    {
-        var uri = new Uri(
-            $"pack://application:,,,/res/images/bases/{baseName.ToLowerInvariant()}.png",
-            UriKind.Absolute);
-
-        return new BitmapImage(uri);
     }
 
     // ---------------------------------------------------------------------
@@ -160,6 +123,26 @@ public partial class MainWindow : Window
         _selectedFolderColor = ToWpfColor(dialog.Color);
 
         UpdateBaseImage();
+    }
+
+    private void UpdateBaseImage()
+    {
+        if (_folderIcon is null)
+            return;
+
+        BitmapSource source =
+            WindowsFolderIconProvider
+                .GetDefaultFolderIcon();
+
+        if (_selectedFolderColor is MediaColor colour)
+        {
+            source =
+                ApplyColor(
+                    source,
+                    colour);
+        }
+
+        _folderIcon.Source = source;
     }
 
     private static MediaColor ToWpfColor(DrawingColor color)
@@ -253,7 +236,7 @@ public partial class MainWindow : Window
             ImagingHelper.ConvertToIcon(
                 pngPath,
                 icoPath,
-                512);
+                256);
 
             // The PNG is only an intermediate file.
             File.Delete(pngPath);

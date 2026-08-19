@@ -12,23 +12,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<None Remove="res\folder.png" />
-		<None Remove="res\images\bases\EmptyFolder.png" />
-		<None Remove="res\images\bases\FullFolder.png" />
-		<None Remove="res\images\bases\OpenedFolder.png" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<Resource Include="res\images\bases\EmptyFolder.png">
-			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		</Resource>
-
-		<Resource Include="res\images\bases\FullFolder.png">
-			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		</Resource>
-	</ItemGroup>
-
-	<ItemGroup>
 		<Compile Update="Resource1.Designer.cs">
 			<DesignTime>True</DesignTime>
 			<AutoGen>True</AutoGen>

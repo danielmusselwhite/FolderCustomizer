@@ -4,17 +4,18 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:FolderCustomizer"
-        xmlns:editor="clr-namespace:FolderCustomizer.Editor"
         mc:Ignorable="d"
 
         Title="Folder Customizer"
-        Width="1080"
+        Width="1100"
         Height="720"
-        MinWidth="800"
+        MinWidth="860"
         MinHeight="600"
 
         WindowStartupLocation="CenterScreen"
-        Background="#F3F3F3"
+
+        Background="#F7F7F7"
+
         FontFamily="Segoe UI Variable Text, Segoe UI"
         FontSize="14">
 
@@ -24,61 +25,73 @@
         <!-- Palette -->
         <!-- ========================================================= -->
 
-        <SolidColorBrush x:Key="PageBackground" Color="#F3F3F3"/>
-        <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFF"/>
-        <SolidColorBrush x:Key="SurfaceSecondaryBrush" Color="#F9F9F9"/>
+        <SolidColorBrush x:Key="AppBackgroundBrush"
+                         Color="#F7F7F7"/>
 
-        <SolidColorBrush x:Key="BorderBrush" Color="#E5E5E5"/>
-        <SolidColorBrush x:Key="BorderStrongBrush" Color="#D5D5D5"/>
+        <SolidColorBrush x:Key="PanelBrush"
+                         Color="#FFFFFF"/>
 
-        <SolidColorBrush x:Key="TextPrimaryBrush" Color="#202020"/>
-        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#707070"/>
-        <SolidColorBrush x:Key="TextTertiaryBrush" Color="#9A9A9A"/>
+        <SolidColorBrush x:Key="EditorBackgroundBrush"
+                         Color="#F2F2F2"/>
 
-        <SolidColorBrush x:Key="AccentBrush" Color="#0067C0"/>
-        <SolidColorBrush x:Key="AccentHoverBrush" Color="#1975C5"/>
-        <SolidColorBrush x:Key="AccentPressedBrush" Color="#005A9E"/>
+        <SolidColorBrush x:Key="ControlBackgroundBrush"
+                         Color="#FFFFFF"/>
 
-        <SolidColorBrush x:Key="NeutralHoverBrush" Color="#F5F5F5"/>
-        <SolidColorBrush x:Key="NeutralPressedBrush" Color="#ECECEC"/>
+        <SolidColorBrush x:Key="ControlHoverBrush"
+                         Color="#F5F5F5"/>
+
+        <SolidColorBrush x:Key="ControlPressedBrush"
+                         Color="#EBEBEB"/>
+
+        <SolidColorBrush x:Key="BorderBrush"
+                         Color="#E2E2E2"/>
+
+        <SolidColorBrush x:Key="StrongBorderBrush"
+                         Color="#CCCCCC"/>
+
+        <SolidColorBrush x:Key="TextBrush"
+                         Color="#202020"/>
+
+        <SolidColorBrush x:Key="SecondaryTextBrush"
+                         Color="#686868"/>
+
+        <SolidColorBrush x:Key="TertiaryTextBrush"
+                         Color="#8A8A8A"/>
+
+        <SolidColorBrush x:Key="AccentBrush"
+                         Color="#0067C0"/>
+
+        <SolidColorBrush x:Key="AccentHoverBrush"
+                         Color="#1975C5"/>
+
+        <SolidColorBrush x:Key="AccentPressedBrush"
+                         Color="#005A9E"/>
 
 
         <!-- ========================================================= -->
         <!-- Typography -->
         <!-- ========================================================= -->
 
-        <Style x:Key="PageTitleStyle"
+        <Style x:Key="WindowTitleStyle"
                TargetType="TextBlock">
 
+            <Setter Property="Foreground"
+                    Value="{StaticResource TextBrush}"/>
+
             <Setter Property="FontSize"
-                    Value="26"/>
+                    Value="20"/>
 
             <Setter Property="FontWeight"
                     Value="SemiBold"/>
 
-            <Setter Property="Foreground"
-                    Value="{StaticResource TextPrimaryBrush}"/>
-
         </Style>
 
 
-        <Style x:Key="SectionTitleStyle"
+        <Style x:Key="SectionHeaderStyle"
                TargetType="TextBlock">
-
-            <Setter Property="FontSize"
-                    Value="17"/>
-
-            <Setter Property="FontWeight"
-                    Value="SemiBold"/>
 
             <Setter Property="Foreground"
-                    Value="{StaticResource TextPrimaryBrush}"/>
-
-        </Style>
-
-
-        <Style x:Key="LabelStyle"
-               TargetType="TextBlock">
+                    Value="{StaticResource TextBrush}"/>
 
             <Setter Property="FontSize"
                     Value="13"/>
@@ -86,82 +99,51 @@
             <Setter Property="FontWeight"
                     Value="SemiBold"/>
 
-            <Setter Property="Foreground"
-                    Value="{StaticResource TextPrimaryBrush}"/>
-
         </Style>
 
 
-        <Style x:Key="DescriptionStyle"
+        <Style x:Key="PropertyLabelStyle"
                TargetType="TextBlock">
+
+            <Setter Property="Foreground"
+                    Value="{StaticResource SecondaryTextBrush}"/>
 
             <Setter Property="FontSize"
                     Value="12"/>
 
-            <Setter Property="Foreground"
-                    Value="{StaticResource TextSecondaryBrush}"/>
-
-            <Setter Property="TextWrapping"
-                    Value="Wrap"/>
+            <Setter Property="Margin"
+                    Value="0,0,0,7"/>
 
         </Style>
 
 
         <!-- ========================================================= -->
-        <!-- Card -->
+        <!-- Buttons -->
         <!-- ========================================================= -->
 
-        <Style x:Key="CardStyle"
-               TargetType="Border">
-
-            <Setter Property="Background"
-                    Value="{StaticResource SurfaceBrush}"/>
-
-            <Setter Property="BorderBrush"
-                    Value="{StaticResource BorderBrush}"/>
-
-            <Setter Property="BorderThickness"
-                    Value="1"/>
-
-            <Setter Property="CornerRadius"
-                    Value="14"/>
-
-            <Setter Property="SnapsToDevicePixels"
-                    Value="True"/>
-
-        </Style>
-
-
-        <!-- ========================================================= -->
-        <!-- Standard Button -->
-        <!-- ========================================================= -->
-
-        <Style x:Key="SecondaryButtonStyle"
+        <Style x:Key="ButtonStyle"
                TargetType="Button">
 
-            <Setter Property="Background"
-                    Value="#FFFFFF"/>
+            <Setter Property="Height"
+                    Value="36"/>
 
-            <Setter Property="Foreground"
-                    Value="{StaticResource TextPrimaryBrush}"/>
+            <Setter Property="Padding"
+                    Value="14,0"/>
+
+            <Setter Property="Background"
+                    Value="{StaticResource ControlBackgroundBrush}"/>
 
             <Setter Property="BorderBrush"
-                    Value="{StaticResource BorderStrongBrush}"/>
+                    Value="{StaticResource StrongBorderBrush}"/>
 
             <Setter Property="BorderThickness"
                     Value="1"/>
 
-            <Setter Property="Padding"
-                    Value="16,9"/>
-
-            <Setter Property="MinHeight"
-                    Value="40"/>
+            <Setter Property="Foreground"
+                    Value="{StaticResource TextBrush}"/>
 
             <Setter Property="FontSize"
                     Value="13"/>
-
-            <Setter Property="FontWeight"
-                    Value="SemiBold"/>
 
             <Setter Property="Cursor"
                     Value="Hand"/>
@@ -173,20 +155,21 @@
                     Value="Center"/>
 
             <Setter Property="Template">
+
                 <Setter.Value>
 
                     <ControlTemplate TargetType="Button">
 
-                        <Border x:Name="Border"
+                        <Border x:Name="Root"
                                 Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="8">
+                                CornerRadius="5">
 
                             <ContentPresenter
+                                Margin="{TemplateBinding Padding}"
                                 HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                Margin="{TemplateBinding Padding}"/>
+                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
 
                         </Border>
 
@@ -195,18 +178,18 @@
                             <Trigger Property="IsMouseOver"
                                      Value="True">
 
-                                <Setter TargetName="Border"
+                                <Setter TargetName="Root"
                                         Property="Background"
-                                        Value="{StaticResource NeutralHoverBrush}"/>
+                                        Value="{StaticResource ControlHoverBrush}"/>
 
                             </Trigger>
 
                             <Trigger Property="IsPressed"
                                      Value="True">
 
-                                <Setter TargetName="Border"
+                                <Setter TargetName="Root"
                                         Property="Background"
-                                        Value="{StaticResource NeutralPressedBrush}"/>
+                                        Value="{StaticResource ControlPressedBrush}"/>
 
                             </Trigger>
 
@@ -223,18 +206,18 @@
                     </ControlTemplate>
 
                 </Setter.Value>
+
             </Setter>
 
         </Style>
 
 
-        <!-- ========================================================= -->
-        <!-- Primary Button -->
-        <!-- ========================================================= -->
-
         <Style x:Key="PrimaryButtonStyle"
                TargetType="Button"
-               BasedOn="{StaticResource SecondaryButtonStyle}">
+               BasedOn="{StaticResource ButtonStyle}">
+
+            <Setter Property="MinWidth"
+                    Value="112"/>
 
             <Setter Property="Background"
                     Value="{StaticResource AccentBrush}"/>
@@ -245,24 +228,25 @@
             <Setter Property="Foreground"
                     Value="White"/>
 
-            <Setter Property="Padding"
-                    Value="20,10"/>
+            <Setter Property="FontWeight"
+                    Value="SemiBold"/>
 
             <Setter Property="Template">
+
                 <Setter.Value>
 
                     <ControlTemplate TargetType="Button">
 
-                        <Border x:Name="Border"
+                        <Border x:Name="Root"
                                 Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="1"
-                                CornerRadius="8">
+                                CornerRadius="5">
 
                             <ContentPresenter
+                                Margin="{TemplateBinding Padding}"
                                 HorizontalAlignment="Center"
-                                VerticalAlignment="Center"
-                                Margin="{TemplateBinding Padding}"/>
+                                VerticalAlignment="Center"/>
 
                         </Border>
 
@@ -271,12 +255,8 @@
                             <Trigger Property="IsMouseOver"
                                      Value="True">
 
-                                <Setter TargetName="Border"
+                                <Setter TargetName="Root"
                                         Property="Background"
-                                        Value="{StaticResource AccentHoverBrush}"/>
-
-                                <Setter TargetName="Border"
-                                        Property="BorderBrush"
                                         Value="{StaticResource AccentHoverBrush}"/>
 
                             </Trigger>
@@ -284,17 +264,9 @@
                             <Trigger Property="IsPressed"
                                      Value="True">
 
-                                <Setter TargetName="Border"
+                                <Setter TargetName="Root"
                                         Property="Background"
                                         Value="{StaticResource AccentPressedBrush}"/>
-
-                            </Trigger>
-
-                            <Trigger Property="IsEnabled"
-                                     Value="False">
-
-                                <Setter Property="Opacity"
-                                        Value="0.45"/>
 
                             </Trigger>
 
@@ -303,40 +275,25 @@
                     </ControlTemplate>
 
                 </Setter.Value>
+
             </Setter>
 
         </Style>
 
 
         <!-- ========================================================= -->
-        <!-- ComboBox -->
+        <!-- Property-style button -->
         <!-- ========================================================= -->
 
-        <Style TargetType="ComboBox">
+        <Style x:Key="PropertyButtonStyle"
+               TargetType="Button"
+               BasedOn="{StaticResource ButtonStyle}">
 
-            <Setter Property="MinHeight"
+            <Setter Property="HorizontalContentAlignment"
+                    Value="Stretch"/>
+
+            <Setter Property="Height"
                     Value="40"/>
-
-            <Setter Property="Padding"
-                    Value="12,7"/>
-
-            <Setter Property="Background"
-                    Value="#FFFFFF"/>
-
-            <Setter Property="Foreground"
-                    Value="{StaticResource TextPrimaryBrush}"/>
-
-            <Setter Property="BorderBrush"
-                    Value="{StaticResource BorderStrongBrush}"/>
-
-            <Setter Property="BorderThickness"
-                    Value="1"/>
-
-            <Setter Property="VerticalContentAlignment"
-                    Value="Center"/>
-
-            <Setter Property="FontSize"
-                    Value="13"/>
 
         </Style>
 
@@ -344,15 +301,15 @@
 
 
     <!-- ============================================================= -->
-    <!-- Root -->
+    <!-- Application layout -->
     <!-- ============================================================= -->
 
-    <Grid Background="{StaticResource PageBackground}">
+    <Grid>
 
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="72"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="54"/>
         </Grid.RowDefinitions>
 
 
@@ -360,347 +317,250 @@
         <!-- Header -->
         <!-- ========================================================= -->
 
-        <Grid Grid.Row="0"
-              Margin="32,26,32,20">
+        <Border Grid.Row="0"
+                Background="{StaticResource PanelBrush}"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="0,0,0,1">
+
+            <Grid Margin="24,0">
+
+                <StackPanel
+                    VerticalAlignment="Center">
+
+                    <TextBlock
+                        Text="Folder Customizer"
+                        Style="{StaticResource WindowTitleStyle}"/>
+
+                    <TextBlock
+                        Text="Create a custom icon for any Windows folder"
+                        Margin="0,3,0,0"
+                        FontSize="12"
+                        Foreground="{StaticResource SecondaryTextBrush}"/>
+
+                </StackPanel>
+
+            </Grid>
+
+        </Border>
+
+
+        <!-- ========================================================= -->
+        <!-- Workspace -->
+        <!-- ========================================================= -->
+
+        <Grid Grid.Row="1">
 
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
+
+                <!-- Editor fills available space -->
+
+                <ColumnDefinition Width="*"
+                                  MinWidth="480"/>
+
+                <!-- Inspector -->
+
+                <ColumnDefinition Width="330"/>
+
             </Grid.ColumnDefinitions>
 
 
-            <StackPanel>
+            <!-- ===================================================== -->
+            <!-- Editor workspace -->
+            <!-- ===================================================== -->
 
-                <TextBlock
-                    Text="Folder Customizer"
-                    Style="{StaticResource PageTitleStyle}"/>
+            <Grid Grid.Column="0"
+                  Background="{StaticResource EditorBackgroundBrush}">
 
-                <TextBlock
-                    Text="Create clean, custom folder icons for Windows."
-                    Margin="0,4,0,0"
-                    FontSize="13"
-                    Foreground="{StaticResource TextSecondaryBrush}"/>
+                <!-- Editor surface -->
 
-            </StackPanel>
-
-
-            <!-- Decorative/version area for later -->
-
-            <Border Grid.Column="1"
+                <Border
+                    HorizontalAlignment="Center"
                     VerticalAlignment="Center"
-                    Background="#E9F3FC"
-                    CornerRadius="20"
-                    Padding="12,6">
 
-                <TextBlock
-                    Text="Icon editor"
-                    Foreground="{StaticResource AccentBrush}"
-                    FontSize="12"
-                    FontWeight="SemiBold"/>
+                    Padding="20"
 
-            </Border>
+                    Background="#FAFAFA"
 
-        </Grid>
+                    BorderBrush="#DEDEDE"
+                    BorderThickness="1"
 
+                    CornerRadius="8">
 
-        <!-- ========================================================= -->
-        <!-- Main -->
-        <!-- ========================================================= -->
+                    <Border.Effect>
 
-        <Grid Grid.Row="1"
-              Margin="32,0,32,24">
+                        <DropShadowEffect
+                            BlurRadius="18"
+                            ShadowDepth="2"
+                            Opacity="0.10"/>
 
-            <Grid.ColumnDefinitions>
+                    </Border.Effect>
 
-                <!-- Responsive preview -->
-                <ColumnDefinition Width="1.2*"
-                                  MinWidth="320"/>
-
-                <ColumnDefinition Width="20"/>
-
-                <!-- Controls -->
-                <ColumnDefinition Width="0.8*"
-                                  MinWidth="320"
-                                  MaxWidth="460"/>
-
-            </Grid.ColumnDefinitions>
-
-
-            <!-- ===================================================== -->
-            <!-- PREVIEW SIDE -->
-            <!-- ===================================================== -->
-
-            <Border Grid.Column="0"
-                    Style="{StaticResource CardStyle}">
-
-                <Grid Margin="28">
-
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="16"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="16"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-
-
-                    <!-- Header -->
-
-                    <Grid Grid.Row="0">
-
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-
-
-                        <StackPanel>
-
-                            <TextBlock
-                                Text="Preview"
-                                Style="{StaticResource SectionTitleStyle}"/>
-
-                            <TextBlock
-                                Text="Position and arrange your overlay image."
-                                Margin="0,4,0,0"
-                                Style="{StaticResource DescriptionStyle}"/>
-
-                        </StackPanel>
-
-
-                        <Border Grid.Column="1"
-                                VerticalAlignment="Center"
-                                Background="#F3F3F3"
-                                CornerRadius="6"
-                                Padding="9,5">
-
-                            <TextBlock
-                                Text="264 × 264"
-                                FontSize="11"
-                                Foreground="{StaticResource TextSecondaryBrush}"/>
-
-                        </Border>
-
-                    </Grid>
-
-
-                    <!-- Editor area -->
-
-                    <Grid Grid.Row="2">
-
-                        <Border
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            Width="328"
-                            Height="328"
-                            Background="#F6F6F6"
-                            CornerRadius="18">
-
-                            <Border.Effect>
-
-                                <DropShadowEffect
-                                    BlurRadius="20"
-                                    ShadowDepth="2"
-                                    Opacity="0.09"/>
-
-                            </Border.Effect>
-
-
-                            <Grid>
-
-                                <!-- Checker-ish inner editing surface -->
-
-                                <Border
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center"
-                                    Width="284"
-                                    Height="284"
-                                    Background="White"
-                                    BorderBrush="#E8E8E8"
-                                    BorderThickness="1"
-                                    CornerRadius="12">
-
-                                    <Border.Effect>
-
-                                        <DropShadowEffect
-                                            BlurRadius="8"
-                                            ShadowDepth="1"
-                                            Opacity="0.05"/>
-
-                                    </Border.Effect>
-
-
-                                    <Grid>
-
-                                        <Canvas
-                                            Name="iconEditorCanvas"
-                                            Width="264"
-                                            Height="264"
-                                            HorizontalAlignment="Center"
-                                            VerticalAlignment="Center"/>
-
-                                    </Grid>
-
-                                </Border>
-
-                            </Grid>
-
-                        </Border>
-
-                    </Grid>
-
-
-                    <!-- Hint -->
 
                     <Border
-                        Grid.Row="4"
-                        Background="#F7F7F7"
-                        BorderBrush="#EBEBEB"
-                        BorderThickness="1"
-                        CornerRadius="8"
-                        Padding="12,9">
+                        Width="264"
+                        Height="264"
 
-                        <StackPanel Orientation="Horizontal">
+                        Background="White"
 
-                            <TextBlock
-                                Text="ⓘ"
-                                FontSize="13"
-                                Foreground="{StaticResource TextSecondaryBrush}"
-                                Margin="0,0,8,0"/>
+                        BorderBrush="#E8E8E8"
+                        BorderThickness="1">
 
-                            <TextBlock
-                                Text="Drag images directly inside the preview to reposition them."
-                                VerticalAlignment="Center"
-                                Style="{StaticResource DescriptionStyle}"/>
+                        <Canvas
+                            Name="iconEditorCanvas"
 
-                        </StackPanel>
+                            Width="264"
+                            Height="264"
+
+                            Background="Transparent"/>
 
                     </Border>
 
-                </Grid>
+                </Border>
 
-            </Border>
+
+                <!-- Canvas hint -->
+
+                <Border
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Bottom"
+
+                    Margin="20"
+
+                    Padding="10,6"
+
+                    Background="#E8E8E8"
+                    CornerRadius="4">
+
+                    <TextBlock
+                        Text="Click an image to select · Drag to move · Delete to remove"
+                        FontSize="11"
+                        Foreground="{StaticResource SecondaryTextBrush}"/>
+
+                </Border>
+
+            </Grid>
 
 
             <!-- ===================================================== -->
-            <!-- OPTIONS SIDE -->
+            <!-- Inspector -->
             <!-- ===================================================== -->
 
-            <Border Grid.Column="2"
-                    Style="{StaticResource CardStyle}">
+            <Border
+                Grid.Column="1"
+
+                Background="{StaticResource PanelBrush}"
+
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="1,0,0,0">
 
                 <ScrollViewer
                     VerticalScrollBarVisibility="Auto"
                     HorizontalScrollBarVisibility="Disabled">
 
-                    <StackPanel Margin="28">
-
-
-                        <!-- Settings heading -->
-
-                        <TextBlock
-                            Text="Customize"
-                            Style="{StaticResource SectionTitleStyle}"/>
-
-                        <TextBlock
-                            Text="Choose the folder, style and overlay."
-                            Margin="0,4,0,24"
-                            Style="{StaticResource DescriptionStyle}"/>
+                    <StackPanel Margin="24">
 
 
                         <!-- ================================================= -->
-                        <!-- Folder section -->
+                        <!-- Folder -->
                         <!-- ================================================= -->
 
                         <TextBlock
                             Text="Folder"
-                            Style="{StaticResource LabelStyle}"/>
+                            Style="{StaticResource SectionHeaderStyle}"/>
+
+                        <TextBlock
+                            Text="Target folder"
+                            Style="{StaticResource PropertyLabelStyle}"
+                            Margin="0,18,0,7"/>
 
 
-                        <Grid Margin="0,8,0,6">
+                        <Grid>
 
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="8"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
 
 
                             <Border
                                 Grid.Column="0"
-                                Height="40"
-                                Padding="12,0"
-                                Background="#FAFAFA"
-                                BorderBrush="{StaticResource BorderStrongBrush}"
+
+                                Height="36"
+
+                                Padding="10,0"
+
+                                Background="#F8F8F8"
+
+                                BorderBrush="{StaticResource StrongBorderBrush}"
                                 BorderThickness="1"
-                                CornerRadius="8">
+
+                                CornerRadius="5">
 
                                 <TextBlock
                                     Name="txt_SelectedFolder"
+
                                     Text="No folder selected"
+
                                     VerticalAlignment="Center"
+
                                     TextTrimming="CharacterEllipsis"
-                                    Foreground="{StaticResource TextSecondaryBrush}"
-                                    FontSize="12"/>
+
+                                    ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"
+
+                                    FontSize="12"
+
+                                    Foreground="{StaticResource SecondaryTextBrush}"/>
 
                             </Border>
 
 
                             <Button
                                 Grid.Column="2"
+
                                 Name="btn_LoadFolder"
-                                Content="Browse"
-                                MinWidth="86"
-                                Style="{StaticResource SecondaryButtonStyle}"
+
+                                Content="Browse…"
+
+                                Style="{StaticResource ButtonStyle}"
+
                                 Click="Btn_Load_Click"/>
 
                         </Grid>
 
 
-                        <TextBlock
-                            Text="Select the Windows folder whose icon you want to change."
-                            Style="{StaticResource DescriptionStyle}"
-                            Margin="0,0,0,24"/>
-
-
+                        <!-- ================================================= -->
                         <!-- Divider -->
+                        <!-- ================================================= -->
 
                         <Border
                             Height="1"
-                            Background="{StaticResource BorderBrush}"
-                            Margin="0,0,0,24"/>
+
+                            Margin="0,24"
+
+                            Background="{StaticResource BorderBrush}"/>
 
 
                         <!-- ================================================= -->
-                        <!-- Folder appearance -->
+                        <!-- Appearance -->
                         <!-- ================================================= -->
 
                         <TextBlock
                             Text="Appearance"
-                            Style="{StaticResource LabelStyle}"/>
-
-
-                        <TextBlock
-                            Text="Base style"
-                            Margin="0,14,0,6"
-                            Style="{StaticResource DescriptionStyle}"/>
-
-
-                        <ComboBox
-                            Name="cbx_Bases"
-                            SelectionChanged="Cbx_ColourChanged"/>
+                            Style="{StaticResource SectionHeaderStyle}"/>
 
 
                         <TextBlock
                             Text="Folder colour"
-                            Margin="0,16,0,6"
-                            Style="{StaticResource DescriptionStyle}"/>
+                            Style="{StaticResource PropertyLabelStyle}"
+                            Margin="0,18,0,7"/>
 
 
                         <Button
                             Name="btn_ColourPicker"
-                            Style="{StaticResource SecondaryButtonStyle}"
-                            HorizontalContentAlignment="Left"
+
+                            Style="{StaticResource PropertyButtonStyle}"
+
                             Click="Btn_ColourPicker_Click">
 
                             <Grid>
@@ -713,43 +573,58 @@
                                 </Grid.ColumnDefinitions>
 
 
-                                <!-- Placeholder colour swatch -->
-
                                 <Border
-                                    Grid.Column="0"
-                                    Width="18"
-                                    Height="18"
-                                    Background="#F4C542"
-                                    BorderBrush="#D2AE36"
+                                    x:Name="folderColourPreview"
+
+                                    Width="20"
+                                    Height="20"
+
+                                    VerticalAlignment="Center"
+
+                                    Background="#F6C344"
+
+                                    BorderBrush="#C7A138"
                                     BorderThickness="1"
-                                    CornerRadius="4"/>
+
+                                    CornerRadius="3"/>
 
 
                                 <TextBlock
                                     Grid.Column="2"
+
                                     Text="Choose colour"
-                                    VerticalAlignment="Center"/>
+
+                                    VerticalAlignment="Center"
+
+                                    FontSize="13"/>
 
 
                                 <TextBlock
                                     Grid.Column="3"
+
                                     Text="›"
-                                    Margin="10,0,0,0"
+
                                     VerticalAlignment="Center"
-                                    Foreground="{StaticResource TextSecondaryBrush}"
-                                    FontSize="18"/>
+
+                                    FontSize="18"
+
+                                    Foreground="{StaticResource SecondaryTextBrush}"/>
 
                             </Grid>
 
                         </Button>
 
 
+                        <!-- ================================================= -->
                         <!-- Divider -->
+                        <!-- ================================================= -->
 
                         <Border
                             Height="1"
-                            Background="{StaticResource BorderBrush}"
-                            Margin="0,24"/>
+
+                            Margin="0,24"
+
+                            Background="{StaticResource BorderBrush}"/>
 
 
                         <!-- ================================================= -->
@@ -757,29 +632,35 @@
                         <!-- ================================================= -->
 
                         <TextBlock
-                            Text="Overlay"
-                            Style="{StaticResource LabelStyle}"/>
-
+                            Text="Overlay image"
+                            Style="{StaticResource SectionHeaderStyle}"/>
 
                         <TextBlock
-                            Text="Add a PNG, logo or image over the base folder."
-                            Margin="0,6,0,12"
-                            Style="{StaticResource DescriptionStyle}"/>
+                            Text="Add a logo, symbol or other image on top of the folder."
+                            Margin="0,7,0,14"
+
+                            FontSize="12"
+
+                            TextWrapping="Wrap"
+
+                            Foreground="{StaticResource SecondaryTextBrush}"/>
 
 
                         <Button
                             Name="btn_addImage"
-                            Style="{StaticResource SecondaryButtonStyle}"
+
+                            Style="{StaticResource PropertyButtonStyle}"
+
                             Click="Btn_AddImage_Click">
 
-                            <StackPanel Orientation="Horizontal"
-                                        HorizontalAlignment="Center">
+                            <StackPanel
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Center">
 
                                 <TextBlock
                                     Text="+"
-                                    FontSize="18"
-                                    FontWeight="Normal"
-                                    Margin="0,-2,8,0"/>
+                                    Margin="0,-1,7,0"
+                                    FontSize="17"/>
 
                                 <TextBlock
                                     Text="Add image"
@@ -788,6 +669,60 @@
                             </StackPanel>
 
                         </Button>
+
+
+                        <!-- ================================================= -->
+                        <!-- Help -->
+                        <!-- ================================================= -->
+
+                        <Border
+                            Margin="0,24,0,0"
+
+                            Padding="12"
+
+                            Background="#F7F7F7"
+
+                            BorderBrush="{StaticResource BorderBrush}"
+                            BorderThickness="1"
+
+                            CornerRadius="5">
+
+                            <StackPanel>
+
+                                <TextBlock
+                                    Text="Editor controls"
+                                    FontSize="12"
+                                    FontWeight="SemiBold"
+                                    Foreground="{StaticResource TextBrush}"/>
+
+                                <TextBlock
+                                    Margin="0,7,0,0"
+
+                                    FontSize="11"
+
+                                    Foreground="{StaticResource SecondaryTextBrush}"
+
+                                    TextWrapping="Wrap">
+
+                                    <Run Text="Drag"/>
+                                    <Run Text=" to move  ·  "/>
+
+                                    <Run Text="Shift"/>
+                                    <Run Text=" resize to keep ratio"/>
+
+                                    <LineBreak/>
+
+                                    <Run Text="Ctrl"/>
+                                    <Run Text=" resize from centre  ·  "/>
+
+                                    <Run Text="Delete"/>
+                                    <Run Text=" removes"/>
+
+                                </TextBlock>
+
+                            </StackPanel>
+
+                        </Border>
 
 
                     </StackPanel>
@@ -800,16 +735,18 @@
 
 
         <!-- ========================================================= -->
-        <!-- Footer -->
+        <!-- Command / status bar -->
         <!-- ========================================================= -->
 
         <Border
             Grid.Row="2"
-            Background="#FAFAFA"
+
+            Background="{StaticResource PanelBrush}"
+
             BorderBrush="{StaticResource BorderBrush}"
             BorderThickness="0,1,0,0">
 
-            <Grid Margin="32,14">
+            <Grid Margin="20,0">
 
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -817,29 +754,33 @@
                 </Grid.ColumnDefinitions>
 
 
-                <StackPanel VerticalAlignment="Center">
+                <StackPanel
+                    Orientation="Horizontal"
+                    VerticalAlignment="Center">
 
                     <TextBlock
-                        Text="Ready to customize"
-                        FontSize="12"
-                        FontWeight="SemiBold"
-                        Foreground="{StaticResource TextPrimaryBrush}"/>
+                        Text="264 × 264"
 
-                    <TextBlock
-                        Text="Your original folder contents will not be modified."
-                        Margin="0,2,0,0"
+                        VerticalAlignment="Center"
+
                         FontSize="11"
-                        Foreground="{StaticResource TextSecondaryBrush}"/>
+
+                        Foreground="{StaticResource TertiaryTextBrush}"/>
 
                 </StackPanel>
 
 
                 <Button
                     Grid.Column="1"
+
                     Name="btn_saveImg"
+
                     Content="Apply icon"
-                    MinWidth="130"
+
+                    VerticalAlignment="Center"
+
                     Style="{StaticResource PrimaryButtonStyle}"
+
                     Click="Btn_UpdateFolder_Icon"/>
 
             </Grid>
