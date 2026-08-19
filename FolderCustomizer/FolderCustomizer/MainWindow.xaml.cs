@@ -31,6 +31,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         InitializeFolderIcon();
+        SetEditorEnabled(false);
     }
 
     private void InitializeFolderIcon()
@@ -56,7 +57,9 @@ public partial class MainWindow : Window
     // Folder selection
     // ---------------------------------------------------------------------
 
-    private void Btn_Load_Click(object sender, RoutedEventArgs e)
+    private void Btn_Load_Click(
+    object sender,
+    RoutedEventArgs e)
     {
         var dialog = new OpenFolderDialog
         {
@@ -67,7 +70,10 @@ public partial class MainWindow : Window
             return;
 
         _folderPath = dialog.FolderName;
+
         txt_SelectedFolder.Text = _folderPath;
+
+        SetEditorEnabled(true);
     }
 
     private void Btn_ResetColour_Click(
@@ -280,15 +286,24 @@ public partial class MainWindow : Window
     // Apply folder icon
     // ---------------------------------------------------------------------
 
-    private void Btn_UpdateFolder_Icon(object sender, RoutedEventArgs e)
+    private void Btn_UpdateFolder_Icon(
+    object sender,
+    RoutedEventArgs e)
     {
         if (!TryGetSelectedFolder(out string folderPath))
             return;
 
         try
         {
-            string pngPath = Path.Combine(folderPath, "custom_icon.png");
-            string icoPath = Path.Combine(folderPath, "custom_icon.ico");
+            string pngPath =
+                Path.Combine(
+                    folderPath,
+                    "custom_icon.png");
+
+            string icoPath =
+                Path.Combine(
+                    folderPath,
+                    "custom_icon.ico");
 
             RenderEditorToPng(pngPath);
 
@@ -297,8 +312,7 @@ public partial class MainWindow : Window
 
             ImagingHelper.ConvertToIcon(
                 pngPath,
-                icoPath,
-                256);
+                icoPath);
 
             // The PNG is only an intermediate file.
             File.Delete(pngPath);
@@ -307,7 +321,16 @@ public partial class MainWindow : Window
                 folderPath,
                 icoPath);
 
+            MessageBox.Show(
+                $"Folder icon updated successfully!\n\n" +
+                $"Note: You may need to refresh the folder view or restart Explorer to see the changes.",
+                "Success",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+
             RefreshShell(folderPath);
+
+            ResetEditorAfterSave();
         }
         catch (UnauthorizedAccessException)
         {
@@ -327,6 +350,42 @@ public partial class MainWindow : Window
                 "Something went wrong",
                 ex.Message);
         }
+    }
+
+    private void ResetEditorAfterSave()
+    {
+        _folderPath = null;
+
+        txt_SelectedFolder.Text =
+            "No folder selected";
+
+        _selectedFolderColor = null;
+
+        txt_SelectedColour.Text =
+            "Default";
+
+        folderColourPreview.Background =
+            Brushes.Transparent;
+
+        folderColourPreview.BorderBrush =
+            new SolidColorBrush(
+                Color.FromRgb(204, 204, 204));
+
+        // Remove all overlays but keep the base folder icon.
+        for (int i = iconEditorCanvas.Children.Count - 1;
+             i >= 0;
+             i--)
+        {
+            if (iconEditorCanvas.Children[i]
+                is EditableImageCanvas)
+            {
+                iconEditorCanvas.Children.RemoveAt(i);
+            }
+        }
+
+        UpdateBaseImage();
+
+        SetEditorEnabled(false);
     }
 
     private bool TryGetSelectedFolder(out string folderPath)
@@ -428,13 +487,6 @@ public partial class MainWindow : Window
             iconPath,
             File.GetAttributes(iconPath) |
             FileAttributes.Hidden);
-
-        MessageBox.Show(
-            $"Folder icon updated successfully!\n\n" +
-            $"Note: You may need to refresh the folder view or restart Explorer to see the changes.",
-            "Success",
-            MessageBoxButton.OK,
-            MessageBoxImage.Information);
     }
 
     // ---------------------------------------------------------------------
@@ -473,5 +525,15 @@ public partial class MainWindow : Window
             title,
             MessageBoxButton.OK,
             MessageBoxImage.Warning);
+    }
+
+    private void SetEditorEnabled(bool enabled)
+    {
+        editorWorkspace.IsEnabled = enabled;
+
+        btn_addImage.IsEnabled = enabled;
+        btn_ColourPicker.IsEnabled = enabled;
+        btn_ResetColour.IsEnabled = enabled;
+        btn_ApplyToolbar.IsEnabled = enabled;
     }
 }
