@@ -74,6 +74,8 @@ public partial class MainWindow : Window
         txt_SelectedFolder.Text = _folderPath;
 
         SetEditorEnabled(true);
+
+        UpdateClearStyleButton();
     }
 
     private void Btn_ResetColour_Click(
@@ -566,5 +568,98 @@ public partial class MainWindow : Window
         btn_ColourPicker.IsEnabled = enabled;
         btn_ResetColour.IsEnabled = enabled;
         btn_ApplyToolbar.IsEnabled = enabled;
+    }
+
+    private bool HasExistingStyle(string folderPath)
+    {
+        if (string.IsNullOrWhiteSpace(folderPath))
+            return false;
+
+        string iconPath =
+            Path.Combine(
+                folderPath,
+                "custom_icon.ico");
+
+        return File.Exists(iconPath);
+    }
+
+    private void UpdateClearStyleButton()
+    {
+        btn_ClearStyle.IsEnabled =
+            _folderPath is not null &&
+            HasExistingStyle(_folderPath);
+    }
+
+    private void Btn_ClearStyle_Click(
+    object sender,
+    RoutedEventArgs e)
+    {
+        if (!TryGetSelectedFolder(out string folderPath))
+            return;
+
+        try
+        {
+            string iconPath =
+                Path.Combine(
+                    folderPath,
+                    "custom_icon.ico");
+
+            string desktopIniPath =
+                Path.Combine(
+                    folderPath,
+                    "desktop.ini");
+
+            if (File.Exists(iconPath))
+            {
+                File.SetAttributes(
+                    iconPath,
+                    FileAttributes.Normal);
+
+                File.Delete(iconPath);
+            }
+
+            if (File.Exists(desktopIniPath))
+            {
+                File.SetAttributes(
+                    desktopIniPath,
+                    FileAttributes.Normal);
+
+                File.Delete(desktopIniPath);
+            }
+
+            // Remove the System attribute that we set when applying
+            // the custom folder icon.
+            FileAttributes attributes =
+                File.GetAttributes(folderPath);
+
+            attributes &=
+                ~FileAttributes.System;
+
+            File.SetAttributes(
+                folderPath,
+                attributes);
+
+            RefreshShell(folderPath);
+
+            ResetEditorAfterSave();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            ShowError(
+                "Permission denied",
+                "Folder Customizer doesn't have permission to clear the custom icon from this folder.");
+        }
+        catch (IOException ex)
+        {
+            ShowError(
+                "Couldn't clear style",
+                ex.Message);
+        }
+        catch (Exception ex)
+        {
+            ShowError(
+                "Something went wrong",
+                ex.Message);
+        }
     }
 }

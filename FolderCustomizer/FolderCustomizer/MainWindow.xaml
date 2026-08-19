@@ -367,6 +367,10 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="1"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="1"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="1"/>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
@@ -470,6 +474,37 @@
 
                 </Button>
 
+                <Border
+                    Grid.Column="5"
+                    Width="1"
+                    Margin="6,10"
+                    Background="{StaticResource BorderBrush}"/>
+
+                <Button
+                    Grid.Column="6"
+                    x:Name="btn_ClearStyle"
+                    IsEnabled="False"
+                    Style="{StaticResource ToolbarButtonStyle}"
+                    Click="Btn_ClearStyle_Click">
+
+                    <StackPanel HorizontalAlignment="Center">
+
+                        <TextBlock
+                            Text="×"
+                            HorizontalAlignment="Center"
+                            FontSize="22"
+                            Foreground="{StaticResource AccentBrush}"/>
+
+                        <TextBlock
+                            Text="Clear style"
+                            Margin="0,3,0,0"
+                            FontSize="11"
+                            LineHeight="14"
+                            LineStackingStrategy="BlockLineHeight"/>
+
+                    </StackPanel>
+
+                </Button>
             </Grid>
 
         </Border>
