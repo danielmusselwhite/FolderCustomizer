@@ -70,6 +70,25 @@ public partial class MainWindow : Window
         txt_SelectedFolder.Text = _folderPath;
     }
 
+    private void Btn_ResetColour_Click(
+    object sender,
+    RoutedEventArgs e)
+    {
+        _selectedFolderColor = null;
+
+        folderColourPreview.Background =
+            Brushes.Transparent;
+
+        folderColourPreview.BorderBrush =
+            new SolidColorBrush(
+                Color.FromRgb(209, 209, 209));
+
+        txt_SelectedColour.Text =
+            "Default";
+
+        UpdateBaseImage();
+    }
+
     // ---------------------------------------------------------------------
     // Overlay images
     // ---------------------------------------------------------------------
@@ -109,7 +128,9 @@ public partial class MainWindow : Window
     // Folder colour
     // ---------------------------------------------------------------------
 
-    private void Btn_ColourPicker_Click(object sender, RoutedEventArgs e)
+    private void Btn_ColourPicker_Click(
+    object sender,
+    RoutedEventArgs e)
     {
         using var dialog = new FormsColorDialog
         {
@@ -117,12 +138,54 @@ public partial class MainWindow : Window
             AnyColor = true
         };
 
-        if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
-            return;
+        if (_selectedFolderColor is MediaColor currentColor)
+        {
+            dialog.Color = DrawingColor.FromArgb(
+                currentColor.A,
+                currentColor.R,
+                currentColor.G,
+                currentColor.B);
+        }
 
-        _selectedFolderColor = ToWpfColor(dialog.Color);
+        if (dialog.ShowDialog() !=
+            System.Windows.Forms.DialogResult.OK)
+        {
+            return;
+        }
+
+        _selectedFolderColor =
+            ToWpfColor(dialog.Color);
+
+        UpdateColourPreview(
+            _selectedFolderColor.Value);
 
         UpdateBaseImage();
+    }
+
+    private void UpdateColourPreview(
+    MediaColor color)
+    {
+        folderColourPreview.Background =
+            new SolidColorBrush(color);
+
+        folderColourPreview.BorderBrush =
+            new SolidColorBrush(
+                GetPreviewBorderColor(color));
+
+        txt_SelectedColour.Text =
+            $"#{color.R:X2}{color.G:X2}{color.B:X2}";
+    }
+
+    private static MediaColor GetPreviewBorderColor(
+    MediaColor color)
+    {
+        const double darkenFactor = 0.78;
+
+        return MediaColor.FromArgb(
+            color.A,
+            (byte)(color.R * darkenFactor),
+            (byte)(color.G * darkenFactor),
+            (byte)(color.B * darkenFactor));
     }
 
     private void UpdateBaseImage()
@@ -144,7 +207,6 @@ public partial class MainWindow : Window
 
         _folderIcon.Source = source;
     }
-
     private static MediaColor ToWpfColor(DrawingColor color)
     {
         return MediaColor.FromArgb(
@@ -366,6 +428,13 @@ public partial class MainWindow : Window
             iconPath,
             File.GetAttributes(iconPath) |
             FileAttributes.Hidden);
+
+        MessageBox.Show(
+            $"Folder icon updated successfully!\n\n" +
+            $"Note: You may need to refresh the folder view or restart Explorer to see the changes.",
+            "Success",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
     }
 
     // ---------------------------------------------------------------------

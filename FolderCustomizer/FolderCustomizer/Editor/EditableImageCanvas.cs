@@ -66,9 +66,6 @@ public sealed class EditableImageCanvas : Canvas
     {
         ArgumentNullException.ThrowIfNull(imagePath);
 
-        Width = DefaultSize;
-        Height = DefaultSize;
-
         Focusable = true;
         ClipToBounds = false;
         Background = Brushes.Transparent;
@@ -76,10 +73,19 @@ public sealed class EditableImageCanvas : Canvas
         RenderTransformOrigin = new Point(0.5, 0.5);
 
         _rotationTransform = new RotateTransform();
-
         RenderTransform = _rotationTransform;
 
-        _image = CreateImage(imagePath);
+        BitmapImage bitmap = LoadBitmap(imagePath);
+
+        Size initialSize = CalculateInitialSize(
+            bitmap.PixelWidth,
+            bitmap.PixelHeight,
+            DefaultSize);
+
+        Width = initialSize.Width;
+        Height = initialSize.Height;
+
+        _image = CreateImage(bitmap);
 
         _selectionBorder = CreateSelectionBorder();
 
@@ -92,9 +98,7 @@ public sealed class EditableImageCanvas : Canvas
         _rotationHandle = CreateRotationHandle();
 
         Children.Add(_image);
-
         Children.Add(_selectionBorder);
-
         Children.Add(_rotationLine);
 
         Children.Add(_topLeftHandle);
@@ -109,7 +113,6 @@ public sealed class EditableImageCanvas : Canvas
 
         MouseLeftButtonDown += OnMouseLeftButtonDown;
         MouseLeftButtonUp += OnMouseLeftButtonUp;
-
         MouseMove += OnMouseMove;
 
         KeyDown += OnKeyDown;
@@ -119,7 +122,6 @@ public sealed class EditableImageCanvas : Canvas
 
         UpdateChrome();
     }
-
     // =====================================================================
     // Public state
     // =====================================================================
@@ -130,7 +132,7 @@ public sealed class EditableImageCanvas : Canvas
     // Creation
     // =====================================================================
 
-    private static Image CreateImage(Uri imagePath)
+    private static BitmapImage LoadBitmap(Uri imagePath)
     {
         var bitmap = new BitmapImage();
 
@@ -140,8 +142,14 @@ public sealed class EditableImageCanvas : Canvas
         bitmap.CacheOption = BitmapCacheOption.OnLoad;
 
         bitmap.EndInit();
+
         bitmap.Freeze();
 
+        return bitmap;
+    }
+
+    private static Image CreateImage(BitmapSource bitmap)
+    {
         return new Image
         {
             Source = bitmap,
@@ -152,6 +160,30 @@ public sealed class EditableImageCanvas : Canvas
 
             IsHitTestVisible = false
         };
+    }
+
+    private static Size CalculateInitialSize(
+    int pixelWidth,
+    int pixelHeight,
+    double maximumDimension)
+    {
+        if (pixelWidth <= 0 || pixelHeight <= 0)
+        {
+            return new Size(
+                maximumDimension,
+                maximumDimension);
+        }
+
+        double scale = Math.Min(
+            maximumDimension / pixelWidth,
+            maximumDimension / pixelHeight);
+
+        // Don't enlarge small images on initial insert.
+        scale = Math.Min(scale, 1.0);
+
+        return new Size(
+            Math.Max(MinimumSize, pixelWidth * scale),
+            Math.Max(MinimumSize, pixelHeight * scale));
     }
 
     private static Border CreateSelectionBorder()
