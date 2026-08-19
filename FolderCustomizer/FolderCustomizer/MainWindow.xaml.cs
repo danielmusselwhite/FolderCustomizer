@@ -69,13 +69,33 @@ public partial class MainWindow : Window
         if (dialog.ShowDialog(this) != true)
             return;
 
-        _folderPath = dialog.FolderName;
+        _folderPath =
+            dialog.FolderName;
 
-        txt_SelectedFolder.Text = _folderPath;
+        txt_SelectedFolder.Text =
+            _folderPath;
+
+        LoadSelectedFolderIcon();
 
         SetEditorEnabled(true);
 
         UpdateClearStyleButton();
+    }
+
+    private void LoadSelectedFolderIcon()
+    {
+        if (_folderIcon is null ||
+            string.IsNullOrWhiteSpace(_folderPath))
+        {
+            return;
+        }
+
+        BitmapSource source =
+            GetFolderBaseImage(
+                _folderPath);
+
+        _folderIcon.Source =
+            source;
     }
 
     private void Btn_ResetColour_Click(
@@ -201,10 +221,25 @@ public partial class MainWindow : Window
         if (_folderIcon is null)
             return;
 
-        BitmapSource source =
-            WindowsFolderIconProvider
-                .GetDefaultFolderIcon();
+        BitmapSource source;
 
+        // If a folder is selected, use its existing custom icon
+        // when available. Otherwise use the Windows default.
+        if (!string.IsNullOrWhiteSpace(_folderPath))
+        {
+            source =
+                GetFolderBaseImage(
+                    _folderPath);
+        }
+        else
+        {
+            source =
+                WindowsFolderIconProvider
+                    .GetDefaultFolderIcon();
+        }
+
+        // Apply the selected colour to whichever base image
+        // we're currently using.
         if (_selectedFolderColor is MediaColor colour)
         {
             source =
@@ -215,6 +250,7 @@ public partial class MainWindow : Window
 
         _folderIcon.Source = source;
     }
+
     private static MediaColor ToWpfColor(DrawingColor color)
     {
         return MediaColor.FromArgb(
@@ -642,6 +678,13 @@ public partial class MainWindow : Window
             RefreshShell(folderPath);
 
             ResetEditorAfterSave();
+
+            MessageBox.Show(
+                "Custom folder icon cleared successfully!\n\n" +
+                "Note: You may need to refresh the folder view or restart Explorer to see the changes.",
+                "Success",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
         }
         catch (UnauthorizedAccessException)
         {
@@ -661,5 +704,62 @@ public partial class MainWindow : Window
                 "Something went wrong",
                 ex.Message);
         }
+    }
+
+    private static BitmapSource LoadIconFile(string iconPath)
+    {
+        using FileStream stream = new(
+            iconPath,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.Read);
+
+        BitmapDecoder decoder =
+            BitmapDecoder.Create(
+                stream,
+                BitmapCreateOptions.PreservePixelFormat,
+                BitmapCacheOption.OnLoad);
+
+        if (decoder.Frames.Count == 0)
+        {
+            throw new InvalidDataException(
+                "The icon file does not contain any image frames.");
+        }
+
+        BitmapFrame largestFrame =
+            decoder.Frames
+                .OrderByDescending(
+                    frame => frame.PixelWidth * frame.PixelHeight)
+                .First();
+
+        largestFrame.Freeze();
+
+        return largestFrame;
+    }
+
+    private BitmapSource GetFolderBaseImage(
+    string folderPath)
+    {
+        string customIconPath =
+            Path.Combine(
+                folderPath,
+                "custom_icon.ico");
+
+        if (File.Exists(customIconPath))
+        {
+            try
+            {
+                return LoadIconFile(
+                    customIconPath);
+            }
+            catch
+            {
+                // If the existing custom icon is corrupt or unreadable,
+                // fall back to the normal Windows folder icon.
+            }
+        }
+
+        return WindowsFolderIconProvider
+            .GetDefaultFolderIcon();
     }
 }
