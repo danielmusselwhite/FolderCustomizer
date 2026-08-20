@@ -1,13 +1,18 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FolderCustomizer.Services;
+using System;
 using System.Collections.ObjectModel;
+using System.IO;
+using System.Threading.Tasks;
 using System.Windows.Media;
 
 namespace FolderCustomizer.ViewModels;
 
 public partial class MainViewModel : ObservableObject
 {
+    public event Func<string, Task>? RenderRequested;
+
     private readonly FolderPickerService _folderPickerService;
     private readonly ColorPickerService _colorPickerService;
     private readonly FolderIconService _folderIconService;
@@ -107,6 +112,43 @@ public partial class MainViewModel : ObservableObject
             return;
 
         OverlayImages.Add(new EditorImageViewModel(imagePath));
+    }
+
+    [RelayCommand]
+    private async Task ApplyIconAsync()
+    {
+        if (string.IsNullOrWhiteSpace(SelectedFolderPath))
+            return;
+
+        string folderPath = SelectedFolderPath;
+        string pngPath = Path.Combine(folderPath, "custom_icon.png");
+        string icoPath = Path.Combine(folderPath, "custom_icon.ico");
+
+        if (RenderRequested is null)
+            return;
+
+        await RenderRequested.Invoke(pngPath);
+
+        if (File.Exists(icoPath))
+        {
+            File.SetAttributes(icoPath, FileAttributes.Normal);
+            File.Delete(icoPath);
+        }
+
+        ImagingHelper.ConvertToIcon(pngPath, icoPath, 256);
+
+        if (File.Exists(pngPath))
+            File.Delete(pngPath);
+
+        _folderIconService.ApplyCustomIcon(folderPath, icoPath);
+
+        OverlayImages.Clear();
+
+        SelectedFolderPath = null;
+        SelectedColour = null;
+        SelectedColourText = "Default";
+        IsEditorEnabled = false;
+        HasExistingStyle = false;
     }
     #endregion
 

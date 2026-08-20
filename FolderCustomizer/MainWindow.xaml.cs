@@ -6,6 +6,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -43,6 +44,7 @@ public partial class MainWindow : Window
 
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
         _viewModel.OverlayImages.CollectionChanged += OverlayImages_CollectionChanged;
+        _viewModel.RenderRequested += RenderEditorAsync;
     }
 
     #region ViewModel Event Handling
@@ -131,6 +133,14 @@ public partial class MainWindow : Window
         }
     }
 
+    #endregion
+
+    #region Render Editor
+    private Task RenderEditorAsync(string outputPath)
+    {
+        RenderEditorToPng(outputPath);
+        return Task.CompletedTask;
+    }
     #endregion
 
     #region Folder Icon

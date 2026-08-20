@@ -427,7 +427,7 @@
                     Style="{StaticResource ToolbarButtonStyle}"
                     x:Name="btn_ApplyToolbar"
                     IsEnabled="{Binding IsEditorEnabled}"
-                    Click="Btn_UpdateFolder_Icon">
+                    Command="{Binding ApplyIconCommand}">
 
                     <StackPanel
                         HorizontalAlignment="Center">
