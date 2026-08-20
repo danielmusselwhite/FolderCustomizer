@@ -12,15 +12,18 @@ namespace FolderCustomizer.ViewModels;
 
 public partial class MainViewModel : ObservableObject
 {
-    public event Func<string, Task>? RenderRequested;
-
     private readonly FolderPickerService _folderPickerService;
     private readonly ColorPickerService _colorPickerService;
     private readonly FolderIconService _folderIconService;
     private readonly ImageProcessingService _imageProcessingService;
     private readonly ImagePickerService _imagePickerService;
 
-    public MainViewModel(FolderPickerService folderPickerService, ColorPickerService colorPickerService, FolderIconService folderIconService, ImageProcessingService imageProcessingService, ImagePickerService imagePickerService)
+    public MainViewModel(
+        FolderPickerService folderPickerService,
+        ColorPickerService colorPickerService,
+        FolderIconService folderIconService,
+        ImageProcessingService imageProcessingService,
+        ImagePickerService imagePickerService)
     {
         _folderPickerService = folderPickerService;
         _colorPickerService = colorPickerService;
@@ -30,6 +33,14 @@ public partial class MainViewModel : ObservableObject
 
         RefreshFolderPreview();
     }
+
+    #region Events
+
+    public event Func<string, Task>? RenderRequested;
+
+    #endregion
+
+    #region Properties
 
     [ObservableProperty]
     private string? selectedFolderPath;
@@ -41,10 +52,10 @@ public partial class MainViewModel : ObservableObject
     private bool hasExistingStyle;
 
     [ObservableProperty]
-    private string selectedColourText = "Default";
+    private Color? selectedColour;
 
     [ObservableProperty]
-    private Color? selectedColour;
+    private string selectedColourText = "Default";
 
     [ObservableProperty]
     private BitmapSource? folderPreview;
@@ -57,7 +68,10 @@ public partial class MainViewModel : ObservableObject
 
     public ObservableCollection<EditorImageViewModel> OverlayImages { get; } = [];
 
+    #endregion
+
     #region Commands
+
     [RelayCommand]
     private void SelectFolder()
     {
@@ -111,16 +125,7 @@ public partial class MainViewModel : ObservableObject
 
         _folderIconService.ClearCustomStyle(SelectedFolderPath);
 
-        OverlayImages.Clear();
-
-        SelectedFolderPath = null;
-        SelectedColour = null;
-        SelectedColourText = "Default";
-        IsEditorEnabled = false;
-        HasExistingStyle = false;
-
-        RefreshColourPreview();
-        RefreshFolderPreview();
+        ResetEditor();
     }
 
     [RelayCommand]
@@ -131,7 +136,15 @@ public partial class MainViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(imagePath))
             return;
 
-        OverlayImages.Add(new EditorImageViewModel(imagePath));
+        var image = new EditorImageViewModel(imagePath)
+        {
+            SelectAction = SelectOverlay,
+            DeleteAction = RemoveOverlay
+        };
+
+        OverlayImages.Add(image);
+
+        SelectOverlay(image);
     }
 
     [RelayCommand]
@@ -140,42 +153,55 @@ public partial class MainViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(SelectedFolderPath))
             return;
 
+        if (RenderRequested is null)
+            return;
+
         string folderPath = SelectedFolderPath;
         string pngPath = Path.Combine(folderPath, "custom_icon.png");
         string icoPath = Path.Combine(folderPath, "custom_icon.ico");
 
-        if (RenderRequested is null)
-            return;
-
-        await RenderRequested.Invoke(pngPath);
-
-        if (File.Exists(icoPath))
+        try
         {
-            File.SetAttributes(icoPath, FileAttributes.Normal);
-            File.Delete(icoPath);
+            await RenderRequested.Invoke(pngPath);
+
+            if (File.Exists(icoPath))
+            {
+                File.SetAttributes(icoPath, FileAttributes.Normal);
+                File.Delete(icoPath);
+            }
+
+            ImagingHelper.ConvertToIcon(pngPath, icoPath, 256);
+
+            _folderIconService.ApplyCustomIcon(folderPath, icoPath);
+
+            ResetEditor();
         }
-
-        ImagingHelper.ConvertToIcon(pngPath, icoPath, 256);
-
-        if (File.Exists(pngPath))
-            File.Delete(pngPath);
-
-        _folderIconService.ApplyCustomIcon(folderPath, icoPath);
-
-        OverlayImages.Clear();
-
-        SelectedFolderPath = null;
-        SelectedColour = null;
-        SelectedColourText = "Default";
-        IsEditorEnabled = false;
-        HasExistingStyle = false;
-
-        RefreshColourPreview();
-        RefreshFolderPreview();
+        finally
+        {
+            if (File.Exists(pngPath))
+                File.Delete(pngPath);
+        }
     }
+
     #endregion
 
-    #region Preview Update Helpers
+    #region Overlay Management
+
+    public void SelectOverlay(EditorImageViewModel selectedImage)
+    {
+        foreach (EditorImageViewModel image in OverlayImages)
+            image.IsSelected = ReferenceEquals(image, selectedImage);
+    }
+
+    private void RemoveOverlay(EditorImageViewModel image)
+    {
+        OverlayImages.Remove(image);
+    }
+
+    #endregion
+
+    #region Preview
+
     private void RefreshFolderPreview()
     {
         BitmapSource source = !string.IsNullOrWhiteSpace(SelectedFolderPath)
@@ -211,5 +237,24 @@ public partial class MainViewModel : ObservableObject
             (byte)(color.G * darkenFactor),
             (byte)(color.B * darkenFactor));
     }
+
+    #endregion
+
+    #region State
+
+    private void ResetEditor()
+    {
+        OverlayImages.Clear();
+
+        SelectedFolderPath = null;
+        SelectedColour = null;
+        SelectedColourText = "Default";
+        IsEditorEnabled = false;
+        HasExistingStyle = false;
+
+        RefreshColourPreview();
+        RefreshFolderPreview();
+    }
+
     #endregion
 }

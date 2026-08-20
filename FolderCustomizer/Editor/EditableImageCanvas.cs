@@ -1,5 +1,6 @@
 ﻿using FolderCustomizer.ViewModels;
 using System;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -29,23 +30,26 @@ public sealed class EditableImageCanvas : Canvas
 
     #region Fields
 
-    private readonly EditorImageViewModel _viewModel;
+    private EditorImageViewModel _viewModel = null!;
 
-    private readonly Image _image;
-    private readonly Border _selectionBorder;
+    private Image _image = null!;
+    private Border _selectionBorder = null!;
 
-    private readonly Rectangle _topLeftHandle;
-    private readonly Rectangle _topRightHandle;
-    private readonly Rectangle _bottomLeftHandle;
-    private readonly Rectangle _bottomRightHandle;
+    private Rectangle _topLeftHandle = null!;
+    private Rectangle _topRightHandle = null!;
+    private Rectangle _bottomLeftHandle = null!;
+    private Rectangle _bottomRightHandle = null!;
 
-    private readonly Line _rotationLine;
-    private readonly Ellipse _rotationHandle;
-    private readonly RotateTransform _rotationTransform;
+    private Line _rotationLine = null!;
+    private Ellipse _rotationHandle = null!;
+    private RotateTransform _rotationTransform = null!;
+
+    private Canvas? _editorCanvas;
 
     private InteractionMode _interactionMode;
     private ResizeCorner _activeResizeCorner;
 
+    private bool _isInitialized;
     private bool _isHovered;
     private bool _isEditorChromeSuppressed;
 
@@ -71,8 +75,6 @@ public sealed class EditableImageCanvas : Canvas
 
     public double Rotation => _rotationTransform.Angle;
 
-    public event EventHandler? DeleteRequested;
-
     public void HideEditorChrome()
     {
         _isEditorChromeSuppressed = true;
@@ -87,19 +89,38 @@ public sealed class EditableImageCanvas : Canvas
 
     #endregion
 
-    #region Constructor
+    #region Initialization
 
-    public EditableImageCanvas(EditorImageViewModel viewModel)
+    public EditableImageCanvas()
+    {
+        Focusable = true;
+        ClipToBounds = false;
+        Background = Brushes.Transparent;
+        RenderTransformOrigin = new Point(0.5, 0.5);
+
+        Loaded += OnControlLoaded;
+        Unloaded += OnUnloaded;
+    }
+
+    private void OnControlLoaded(object sender, RoutedEventArgs e)
+    {
+        if (_isInitialized)
+            return;
+
+        if (DataContext is not EditorImageViewModel viewModel)
+            throw new InvalidOperationException("EditableImageCanvas requires an EditorImageViewModel DataContext.");
+
+        Initialize(viewModel);
+
+        _isInitialized = true;
+    }
+
+    private void Initialize(EditorImageViewModel viewModel)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
         ArgumentException.ThrowIfNullOrWhiteSpace(viewModel.ImagePath);
 
         _viewModel = viewModel;
-
-        Focusable = true;
-        ClipToBounds = false;
-        Background = Brushes.Transparent;
-        RenderTransformOrigin = new Point(0.5, 0.5);
 
         BitmapImage bitmap = LoadBitmap(new Uri(viewModel.ImagePath, UriKind.Absolute));
 
@@ -107,9 +128,6 @@ public sealed class EditableImageCanvas : Canvas
 
         Width = viewModel.Width;
         Height = viewModel.Height;
-
-        SetLeft(this, viewModel.X);
-        SetTop(this, viewModel.Y);
 
         _rotationTransform = new RotateTransform(viewModel.Rotation);
         RenderTransform = _rotationTransform;
@@ -126,13 +144,17 @@ public sealed class EditableImageCanvas : Canvas
         _rotationHandle = CreateRotationHandle();
 
         AddVisuals();
-        RegisterEvents();
+        RegisterInteractionEvents();
+
+        _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+
+        _editorCanvas = GetEditorCanvas();
+
+        if (_editorCanvas is not null)
+            _editorCanvas.PreviewMouseLeftButtonDown += OnEditorPreviewMouseLeftButtonDown;
+
         UpdateChrome();
     }
-
-    #endregion
-
-    #region Initialization
 
     private void InitializeViewModelSize(BitmapSource bitmap)
     {
@@ -159,11 +181,8 @@ public sealed class EditableImageCanvas : Canvas
         Children.Add(_rotationHandle);
     }
 
-    private void RegisterEvents()
+    private void RegisterInteractionEvents()
     {
-        Loaded += OnLoaded;
-        Unloaded += OnUnloaded;
-
         MouseEnter += OnMouseEnter;
         MouseLeave += OnMouseLeave;
         MouseMove += OnMouseMove;
@@ -172,6 +191,20 @@ public sealed class EditableImageCanvas : Canvas
         MouseLeftButtonUp += OnMouseLeftButtonUp;
 
         KeyDown += OnKeyDown;
+    }
+
+    private void OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        if (!_isInitialized)
+            return;
+
+        _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+
+        if (_editorCanvas is not null)
+            _editorCanvas.PreviewMouseLeftButtonDown -= OnEditorPreviewMouseLeftButtonDown;
+
+        if (IsMouseCaptured)
+            ReleaseMouseCapture();
     }
 
     #endregion
@@ -271,24 +304,19 @@ public sealed class EditableImageCanvas : Canvas
 
     #endregion
 
+    #region ViewModel Events
+
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(EditorImageViewModel.IsSelected))
+            UpdateChrome();
+    }
+
+    #endregion
+
     #region Parent Interaction
 
-    private void OnLoaded(object sender, RoutedEventArgs e)
-    {
-        if (Parent is UIElement parent)
-            parent.PreviewMouseLeftButtonDown += OnParentPreviewMouseLeftButtonDown;
-    }
-
-    private void OnUnloaded(object sender, RoutedEventArgs e)
-    {
-        if (Parent is UIElement parent)
-            parent.PreviewMouseLeftButtonDown -= OnParentPreviewMouseLeftButtonDown;
-
-        if (IsMouseCaptured)
-            ReleaseMouseCapture();
-    }
-
-    private void OnParentPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    private void OnEditorPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (!_viewModel.IsSelected)
             return;
@@ -319,6 +347,7 @@ public sealed class EditableImageCanvas : Canvas
     private void OnMouseEnter(object sender, MouseEventArgs e)
     {
         _isHovered = true;
+
         UpdateCursor(e);
         UpdateChrome();
     }
@@ -395,16 +424,7 @@ public sealed class EditableImageCanvas : Canvas
 
     private void Select()
     {
-        if (Parent is Panel parent)
-        {
-            foreach (UIElement child in parent.Children)
-            {
-                if (child is EditableImageCanvas other && !ReferenceEquals(other, this))
-                    other.Deselect();
-            }
-        }
-
-        _viewModel.IsSelected = true;
+        _viewModel.SelectAction?.Invoke(_viewModel);
 
         Focus();
         Keyboard.Focus(this);
@@ -429,29 +449,34 @@ public sealed class EditableImageCanvas : Canvas
 
     private void BeginDrag(MouseButtonEventArgs e)
     {
-        if (Parent is not Canvas parent)
+        Canvas? canvas = GetEditorCanvas();
+
+        if (canvas is null)
             return;
 
         _interactionMode = InteractionMode.Dragging;
 
-        _dragStartMouse = e.GetPosition(parent);
-        _dragStartLeft = GetCanvasLeft();
-        _dragStartTop = GetCanvasTop();
+        _dragStartMouse = e.GetPosition(canvas);
+        _dragStartLeft = _viewModel.X;
+        _dragStartTop = _viewModel.Y;
 
         Cursor = Cursors.SizeAll;
+
         CaptureMouse();
     }
 
     private void Drag(MouseEventArgs e)
     {
-        if (Parent is not Canvas parent)
+        Canvas? canvas = GetEditorCanvas();
+
+        if (canvas is null)
             return;
 
-        Point mouse = e.GetPosition(parent);
+        Point mouse = e.GetPosition(canvas);
         Vector movement = mouse - _dragStartMouse;
 
-        double maxLeft = Math.Max(0, parent.ActualWidth - Width);
-        double maxTop = Math.Max(0, parent.ActualHeight - Height);
+        double maxLeft = Math.Max(0, canvas.ActualWidth - Width);
+        double maxTop = Math.Max(0, canvas.ActualHeight - Height);
 
         double left = Math.Clamp(_dragStartLeft + movement.X, 0, maxLeft);
         double top = Math.Clamp(_dragStartTop + movement.Y, 0, maxTop);
@@ -465,28 +490,33 @@ public sealed class EditableImageCanvas : Canvas
 
     private void BeginResize(ResizeCorner corner, MouseButtonEventArgs e)
     {
-        if (Parent is not Canvas parent)
+        Canvas? canvas = GetEditorCanvas();
+
+        if (canvas is null)
             return;
 
         _interactionMode = InteractionMode.Resizing;
         _activeResizeCorner = corner;
 
-        _resizeStartMouse = e.GetPosition(parent);
-        _resizeStartLeft = GetCanvasLeft();
-        _resizeStartTop = GetCanvasTop();
+        _resizeStartMouse = e.GetPosition(canvas);
+        _resizeStartLeft = _viewModel.X;
+        _resizeStartTop = _viewModel.Y;
         _resizeStartWidth = Width;
         _resizeStartHeight = Height;
 
         CaptureMouse();
+
         UpdateCursorForCorner(corner);
     }
 
     private void Resize(MouseEventArgs e)
     {
-        if (Parent is not Canvas parent)
+        Canvas? canvas = GetEditorCanvas();
+
+        if (canvas is null)
             return;
 
-        Point currentMouse = e.GetPosition(parent);
+        Point currentMouse = e.GetPosition(canvas);
         Vector screenDelta = currentMouse - _resizeStartMouse;
         Vector delta = RotateVector(screenDelta, -_rotationTransform.Angle);
 
@@ -511,7 +541,8 @@ public sealed class EditableImageCanvas : Canvas
         if (preserveAspectRatio)
             ApplyAspectRatio(ref newWidth, ref newHeight);
 
-        ApplyResize(newWidth, newHeight, leftCorner, topCorner, fromCentre, parent);
+        ApplyResize(newWidth, newHeight, leftCorner, topCorner, fromCentre, canvas);
+
         UpdateChrome();
     }
 
@@ -531,7 +562,13 @@ public sealed class EditableImageCanvas : Canvas
         height = _resizeStartHeight * scale;
     }
 
-    private void ApplyResize(double newWidth, double newHeight, bool leftCorner, bool topCorner, bool fromCentre, Canvas parent)
+    private void ApplyResize(
+        double newWidth,
+        double newHeight,
+        bool leftCorner,
+        bool topCorner,
+        bool fromCentre,
+        Canvas parent)
     {
         double newLeft;
         double newTop;
@@ -582,6 +619,7 @@ public sealed class EditableImageCanvas : Canvas
         Height = Math.Max(MinimumSize, newHeight);
 
         SetPosition(Math.Max(0, newLeft), Math.Max(0, newTop));
+
         SyncSizeToViewModel();
     }
 
@@ -591,30 +629,35 @@ public sealed class EditableImageCanvas : Canvas
 
     private void BeginRotation(MouseButtonEventArgs e)
     {
-        if (Parent is not Canvas parent)
+        Canvas? canvas = GetEditorCanvas();
+
+        if (canvas is null)
             return;
 
         _interactionMode = InteractionMode.Rotating;
 
         _rotationCentre = new Point(
-            GetCanvasLeft() + (Width / 2),
-            GetCanvasTop() + (Height / 2));
+            _viewModel.X + (Width / 2),
+            _viewModel.Y + (Height / 2));
 
-        Point mouse = e.GetPosition(parent);
+        Point mouse = e.GetPosition(canvas);
 
         _rotationStartMouseAngle = CalculateAngle(_rotationCentre, mouse);
         _rotationStartAngle = _rotationTransform.Angle;
 
         Cursor = Cursors.Hand;
+
         CaptureMouse();
     }
 
     private void Rotate(MouseEventArgs e)
     {
-        if (Parent is not Canvas parent)
+        Canvas? canvas = GetEditorCanvas();
+
+        if (canvas is null)
             return;
 
-        Point mouse = e.GetPosition(parent);
+        Point mouse = e.GetPosition(canvas);
 
         double currentMouseAngle = CalculateAngle(_rotationCentre, mouse);
         double angle = _rotationStartAngle + currentMouseAngle - _rotationStartMouseAngle;
@@ -631,6 +674,7 @@ public sealed class EditableImageCanvas : Canvas
     private static double CalculateAngle(Point centre, Point point)
     {
         double radians = Math.Atan2(point.Y - centre.Y, point.X - centre.X);
+
         return radians * 180 / Math.PI;
     }
 
@@ -684,11 +728,13 @@ public sealed class EditableImageCanvas : Canvas
 
     private void Nudge(double x, double y)
     {
-        if (Parent is not Canvas parent)
+        Canvas? canvas = GetEditorCanvas();
+
+        if (canvas is null)
             return;
 
-        double left = Math.Clamp(GetCanvasLeft() + x, 0, Math.Max(0, parent.ActualWidth - Width));
-        double top = Math.Clamp(GetCanvasTop() + y, 0, Math.Max(0, parent.ActualHeight - Height));
+        double left = Math.Clamp(_viewModel.X + x, 0, Math.Max(0, canvas.ActualWidth - Width));
+        double top = Math.Clamp(_viewModel.Y + y, 0, Math.Max(0, canvas.ActualHeight - Height));
 
         SetPosition(left, top);
     }
@@ -698,7 +744,7 @@ public sealed class EditableImageCanvas : Canvas
         if (IsMouseCaptured)
             ReleaseMouseCapture();
 
-        DeleteRequested?.Invoke(this, EventArgs.Empty);
+        _viewModel.DeleteAction?.Invoke(_viewModel);
     }
 
     #endregion
@@ -709,13 +755,17 @@ public sealed class EditableImageCanvas : Canvas
     {
         Size result = base.ArrangeOverride(arrangeSize);
 
-        UpdateChrome();
+        if (_isInitialized)
+            UpdateChrome();
 
         return result;
     }
 
     private void UpdateChrome()
     {
+        if (!_isInitialized)
+            return;
+
         double width = GetCurrentWidth();
         double height = GetCurrentHeight();
 
@@ -798,6 +848,7 @@ public sealed class EditableImageCanvas : Canvas
     private void SetChromeVisibility(Visibility visibility)
     {
         _selectionBorder.Visibility = visibility;
+
         SetHandleVisibility(visibility);
     }
 
@@ -888,9 +939,6 @@ public sealed class EditableImageCanvas : Canvas
 
     private void SetPosition(double left, double top)
     {
-        SetLeft(this, left);
-        SetTop(this, top);
-
         _viewModel.X = left;
         _viewModel.Y = top;
     }
@@ -905,16 +953,19 @@ public sealed class EditableImageCanvas : Canvas
 
     #region Helpers
 
-    private double GetCanvasLeft()
+    private Canvas? GetEditorCanvas()
     {
-        double value = GetLeft(this);
-        return double.IsNaN(value) ? 0 : value;
-    }
+        DependencyObject? current = VisualTreeHelper.GetParent(this);
 
-    private double GetCanvasTop()
-    {
-        double value = GetTop(this);
-        return double.IsNaN(value) ? 0 : value;
+        while (current is not null)
+        {
+            if (current is Canvas canvas)
+                return canvas;
+
+            current = VisualTreeHelper.GetParent(current);
+        }
+
+        return null;
     }
 
     private double GetCurrentWidth() => double.IsNaN(Width) ? ActualWidth : Width;

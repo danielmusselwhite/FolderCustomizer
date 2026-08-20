@@ -2,11 +2,12 @@
 using FolderCustomizer.Services;
 using FolderCustomizer.ViewModels;
 using System;
-using System.Collections.Specialized;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -31,105 +32,30 @@ public partial class MainWindow : Window
 
         DataContext = _viewModel;
 
-        _viewModel.OverlayImages.CollectionChanged += OverlayImages_CollectionChanged;
         _viewModel.RenderRequested += RenderEditorAsync;
     }
 
-    #region Overlay Images Event Handling
+    #region Rendering
 
-    private void OverlayImages_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    private Task RenderEditorAsync(string outputPath)
     {
-        if (e.Action == NotifyCollectionChangedAction.Reset)
-        {
-            ClearOverlays();
-            return;
-        }
-
-        if (e.NewItems is not null)
-        {
-            foreach (EditorImageViewModel image in e.NewItems)
-                AddOverlay(image);
-        }
-
-        if (e.OldItems is not null)
-        {
-            foreach (EditorImageViewModel image in e.OldItems)
-                RemoveOverlay(image);
-        }
+        RenderEditorToPng(outputPath);
+        return Task.CompletedTask;
     }
 
-    private void AddOverlay(EditorImageViewModel imageViewModel)
+    private void RenderEditorToPng(string outputPath)
     {
-        try
-        {
-            var editableImage = new EditableImageCanvas(imageViewModel);
-
-            editableImage.DeleteRequested += (_, _) =>
-            {
-                _viewModel.OverlayImages.Remove(imageViewModel);
-            };
-
-            iconEditorCanvas.Children.Add(editableImage);
-        }
-        catch (Exception ex)
-        {
-            ShowError("Couldn't add image", $"The selected image couldn't be loaded.\n\n{ex.Message}");
-        }
-    }
-
-    private void RemoveOverlay(EditorImageViewModel imageViewModel)
-    {
-        for (int i = iconEditorCanvas.Children.Count - 1; i >= 0; i--)
-        {
-            if (iconEditorCanvas.Children[i] is EditableImageCanvas editableImage &&
-                ReferenceEquals(editableImage.ViewModel, imageViewModel))
-            {
-                iconEditorCanvas.Children.RemoveAt(i);
-                return;
-            }
-        }
-    }
-
-    #endregion
-
-    #region Render Editor
-    private async Task RenderEditorAsync(string outputPath)
-    {
-        await RenderEditorToPng(outputPath);
-        await Task.CompletedTask;
-    }
-    #endregion
-
-    #region Overlay Images
-
-    private void ClearOverlays()
-    {
-        for (int i = iconEditorCanvas.Children.Count - 1; i >= 0; i--)
-        {
-            if (iconEditorCanvas.Children[i] is EditableImageCanvas)
-                iconEditorCanvas.Children.RemoveAt(i);
-        }
-    }
-
-    #endregion
-
-    #region Apply Icon
-
-    private async Task RenderEditorToPng(string outputPath)
-    {
-        var editableImages = iconEditorCanvas.Children
-            .OfType<EditableImageCanvas>()
-            .ToList();
+        List<EditableImageCanvas> editableImages = GetEditableImages().ToList();
 
         try
         {
             foreach (EditableImageCanvas editableImage in editableImages)
                 editableImage.HideEditorChrome();
 
-            iconEditorCanvas.UpdateLayout();
+            iconEditorSurface.UpdateLayout();
 
-            int width = (int)Math.Ceiling(iconEditorCanvas.ActualWidth);
-            int height = (int)Math.Ceiling(iconEditorCanvas.ActualHeight);
+            int width = (int)Math.Ceiling(iconEditorSurface.ActualWidth);
+            int height = (int)Math.Ceiling(iconEditorSurface.ActualHeight);
 
             if (width <= 0 || height <= 0)
             {
@@ -138,7 +64,7 @@ public partial class MainWindow : Window
             }
 
             var bitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
-            bitmap.Render(iconEditorCanvas);
+            bitmap.Render(iconEditorSurface);
 
             var encoder = new PngBitmapEncoder();
             encoder.Frames.Add(BitmapFrame.Create(bitmap));
@@ -151,22 +77,40 @@ public partial class MainWindow : Window
             foreach (EditableImageCanvas editableImage in editableImages)
                 editableImage.RestoreEditorChrome();
 
-            iconEditorCanvas.UpdateLayout();
+            iconEditorSurface.UpdateLayout();
         }
     }
 
-    #endregion
-
-    #region UI Helpers
-
-    private void ShowError(string title, string message)
+    private IEnumerable<EditableImageCanvas> GetEditableImages()
     {
-        MessageBox.Show(
-            this,
-            message,
-            title,
-            MessageBoxButton.OK,
-            MessageBoxImage.Warning);
+        foreach (EditorImageViewModel imageViewModel in _viewModel.OverlayImages)
+        {
+            if (overlayItemsControl.ItemContainerGenerator.ContainerFromItem(imageViewModel) is not ContentPresenter presenter)
+                continue;
+
+            EditableImageCanvas? editableImage = FindVisualChild<EditableImageCanvas>(presenter);
+
+            if (editableImage is not null)
+                yield return editableImage;
+        }
+    }
+
+    private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+    {
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+        {
+            DependencyObject child = VisualTreeHelper.GetChild(parent, i);
+
+            if (child is T match)
+                return match;
+
+            T? descendant = FindVisualChild<T>(child);
+
+            if (descendant is not null)
+                return descendant;
+        }
+
+        return null;
     }
 
     #endregion

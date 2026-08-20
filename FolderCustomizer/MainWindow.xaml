@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:editor="clr-namespace:FolderCustomizer.Editor"
         xmlns:local="clr-namespace:FolderCustomizer"
         mc:Ignorable="d"
         Title="Folder Customizer"
@@ -558,29 +559,47 @@
                                     Opacity="0.10"/>
                             </Border.Effect>
 
-                            <Border
-                                Width="258"
-                                Height="258"
-                                Background="White"
-                                BorderBrush="#BDBDBD"
-                                BorderThickness="1">
+                            <Grid x:Name="iconEditorSurface"
+                                  Width="256"
+                                  Height="256">
 
-                                <Canvas
-                                    x:Name="iconEditorCanvas"
-                                    Width="256"
-                                    Height="256"
-                                    Background="Transparent">
+                                <Image Width="256"
+                                       Height="256"
+                                       Source="{Binding FolderPreview}"
+                                       Stretch="Uniform"
+                                       IsHitTestVisible="False"/>
 
-                                    <Image
-                                        Width="256"
-                                        Height="256"
-                                        Source="{Binding FolderPreview}"
-                                        Stretch="Uniform"
-                                        IsHitTestVisible="False"/>
+                                <ItemsControl x:Name="overlayItemsControl"
+                                              Width="256"
+                                              Height="256"
+                                              ItemsSource="{Binding OverlayImages}">
 
-                                </Canvas>
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <Canvas Width="256"
+                                                    Height="256"
+                                                    Background="Transparent"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
 
-                            </Border>
+                                    <ItemsControl.ItemContainerStyle>
+                                        <Style TargetType="ContentPresenter">
+                                            <Setter Property="Canvas.Left"
+                                                    Value="{Binding X}"/>
+                                            <Setter Property="Canvas.Top"
+                                                    Value="{Binding Y}"/>
+                                        </Style>
+                                    </ItemsControl.ItemContainerStyle>
+
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <editor:EditableImageCanvas/>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+
+                                </ItemsControl>
+
+                            </Grid>
 
                         </Border>
 

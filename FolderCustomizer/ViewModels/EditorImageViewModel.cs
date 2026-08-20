@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using System;
 
 namespace FolderCustomizer.ViewModels;
 
@@ -6,8 +7,20 @@ public partial class EditorImageViewModel : ObservableObject
 {
     public EditorImageViewModel(string imagePath)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(imagePath);
+
         ImagePath = imagePath;
     }
+
+    #region Actions
+
+    public Action<EditorImageViewModel>? SelectAction { get; set; }
+
+    public Action<EditorImageViewModel>? DeleteAction { get; set; }
+
+    #endregion
+
+    #region Properties
 
     [ObservableProperty]
     private string imagePath;
@@ -29,4 +42,6 @@ public partial class EditorImageViewModel : ObservableObject
 
     [ObservableProperty]
     private bool isSelected;
+
+    #endregion
 }
