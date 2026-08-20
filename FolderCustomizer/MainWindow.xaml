@@ -566,10 +566,19 @@
                                 BorderThickness="1">
 
                                 <Canvas
-                                    Name="iconEditorCanvas"
+                                    x:Name="iconEditorCanvas"
                                     Width="256"
                                     Height="256"
-                                    Background="Transparent"/>
+                                    Background="Transparent">
+
+                                    <Image
+                                        Width="256"
+                                        Height="256"
+                                        Source="{Binding FolderPreview}"
+                                        Stretch="Uniform"
+                                        IsHitTestVisible="False"/>
+
+                                </Canvas>
 
                             </Border>
 
@@ -751,12 +760,11 @@
 
 
                                     <Border
-                                        x:Name="folderColourPreview"
                                         Width="22"
                                         Height="22"
                                         VerticalAlignment="Center"
-                                        Background="Transparent"
-                                        BorderBrush="{StaticResource BorderBrush}"
+                                        Background="{Binding ColourPreviewBrush}"
+                                        BorderBrush="{Binding ColourPreviewBorderBrush}"
                                         BorderThickness="1"
                                         CornerRadius="2"/>
 
@@ -815,6 +823,7 @@
                                 </Grid.ColumnDefinitions>
 
                                 <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
@@ -885,8 +894,23 @@
                                     Grid.Column="1"
                                     Text="Hold Ctrl"
                                     FontSize="11"
+                                    Margin="0,0,0,7"
                                     Foreground="{StaticResource SecondaryTextBrush}"/>
 
+                                <TextBlock
+                                    Grid.Row="4"
+                                    Grid.Column="0"
+                                    Text="Delete Image"
+                                    FontSize="11"
+                                    FontWeight="SemiBold"/>
+
+                                <TextBlock
+                                    Grid.Row="4"
+                                    Grid.Column="1"
+                                    Text="Press Delete"
+                                    FontSize="11"
+                                    Margin="0,0,0,7"
+                                    Foreground="{StaticResource SecondaryTextBrush}"/>
                             </Grid>
 
 
