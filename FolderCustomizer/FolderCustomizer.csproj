@@ -13,11 +13,21 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <None Remove="assets\masks\folder.png" />
+	  <None Remove="assets\masks\folderWithoutTab.png" />
+	</ItemGroup>
+
+	<ItemGroup>
 	  <Content Include="assets\folderCustomizerIcon.ico" />
 	</ItemGroup>
 
 	<ItemGroup>
 	  <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Resource Include="assets\masks\folder.png" />
+	  <Resource Include="assets\masks\folderWithoutTab.png" />
 	</ItemGroup>
 
 	<ItemGroup>

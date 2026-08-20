@@ -278,6 +278,7 @@ public sealed class EditableImageCanvas : Canvas
         }
 
         UpdateChrome();
+        UpdateImageClip();
     }
 
     /// <summary>
@@ -470,14 +471,17 @@ public sealed class EditableImageCanvas : Canvas
     #region ViewModel Events
 
     /// <summary>
-    /// Responds to view-model state changes that affect the editor chrome.
+    /// Responds to changes in the bound overlay ViewModel and updates visual state.
     /// </summary>
-    private void OnViewModelPropertyChanged(
-        object? sender,
-        PropertyChangedEventArgs e)
+    /// <param name="sender">The ViewModel that raised the change notification.</param>
+    /// <param name="e">Information about the changed property.</param>
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(EditorImageViewModel.IsSelected))
             UpdateChrome();
+
+        if (e.PropertyName == nameof(EditorImageViewModel.CropShape))
+            UpdateImageClip();
     }
 
     #endregion
@@ -634,7 +638,7 @@ public sealed class EditableImageCanvas : Canvas
     }
 
     /// <summary>
-    /// Ends any active interaction and removes selection from this overlay.
+    /// Ends any active interaction and requests deselection of this overlay.
     /// </summary>
     private void Deselect()
     {
@@ -642,11 +646,116 @@ public sealed class EditableImageCanvas : Canvas
             ReleaseMouseCapture();
 
         _interactionMode = InteractionMode.None;
-        _viewModel.IsSelected = false;
+
+        _viewModel.DeselectAction?.Invoke(_viewModel);
 
         UpdateChrome();
     }
 
+    #endregion
+
+    #region Cropping(Clipping)
+    /// <summary>
+    /// Updates the non-destructive crop or opacity mask applied to the overlay image
+    /// based on the currently selected crop preset.
+    /// </summary>
+    private void UpdateImageClip()
+    {
+        if (!_isInitialized)
+            return;
+
+        double width = GetCurrentWidth();
+        double height = GetCurrentHeight();
+
+        if (width <= 0 || height <= 0)
+            return;
+
+        _image.Clip = null;
+        _image.OpacityMask = null;
+
+        switch (_viewModel.CropShape)
+        {
+            case ImageCropShape.RoundedRectangle:
+                _image.Clip = CreateRoundedRectangleClip(width, height);
+                break;
+
+            case ImageCropShape.Circle:
+                _image.Clip = CreateCircleClip(width, height);
+                break;
+
+            case ImageCropShape.Folder:
+                _image.OpacityMask = CreateFolderMask(includeTab: true);
+                break;
+
+            case ImageCropShape.FolderWithoutTab:
+                _image.OpacityMask = CreateFolderMask(includeTab: false);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Creates a rounded-rectangle clipping geometry for the current image bounds.
+    /// </summary>
+    /// <param name="width">The image width.</param>
+    /// <param name="height">The image height.</param>
+    /// <returns>The rounded clipping geometry.</returns>
+    private static Geometry CreateRoundedRectangleClip(double width, double height)
+    {
+        double radius = Math.Min(width, height) * 0.12;
+
+        return new RectangleGeometry(
+            new Rect(0, 0, width, height),
+            radius,
+            radius);
+    }
+
+    /// <summary>
+    /// Creates an elliptical clipping geometry constrained to the current image bounds.
+    /// </summary>
+    /// <param name="width">The image width.</param>
+    /// <param name="height">The image height.</param>
+    /// <returns>The elliptical clipping geometry.</returns>
+    private static Geometry CreateCircleClip(double width, double height)
+    {
+        return new EllipseGeometry(
+            new Point(width / 2, height / 2),
+            width / 2,
+            height / 2);
+    }
+
+    /// <summary>
+    /// Creates an opacity mask matching the folder silhouette used by the editor.
+    /// </summary>
+    /// <param name="includeTab">
+    /// True to use the complete folder silhouette including its upper tab;
+    /// otherwise false to use only the main folder body.
+    /// </param>
+    /// <returns>An image brush suitable for use as an opacity mask.</returns>
+    private static Brush CreateFolderMask(bool includeTab)
+    {
+        string resourcePath = includeTab
+            ? "pack://application:,,,/assets/masks/Folder.png"
+            : "pack://application:,,,/assets/masks/FolderWithoutTab.png";
+
+        var bitmap = new BitmapImage();
+
+        bitmap.BeginInit();
+        bitmap.UriSource = new Uri(resourcePath, UriKind.Absolute);
+        bitmap.CacheOption = BitmapCacheOption.OnLoad;
+        bitmap.EndInit();
+        bitmap.Freeze();
+
+        var brush = new ImageBrush(bitmap)
+        {
+            Stretch = Stretch.Fill,
+            AlignmentX = AlignmentX.Center,
+            AlignmentY = AlignmentY.Center
+        };
+
+        brush.Freeze();
+
+        return brush;
+    }
     #endregion
 
     #region Dragging
@@ -818,6 +927,7 @@ public sealed class EditableImageCanvas : Canvas
             canvas);
 
         UpdateChrome();
+        UpdateImageClip();
     }
 
     /// <summary>
@@ -1157,7 +1267,10 @@ public sealed class EditableImageCanvas : Canvas
             base.ArrangeOverride(arrangeSize);
 
         if (_isInitialized)
+        {
             UpdateChrome();
+            UpdateImageClip();
+        }
 
         return result;
     }

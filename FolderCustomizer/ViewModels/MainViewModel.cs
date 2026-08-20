@@ -1,9 +1,11 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using FolderCustomizer.Editor;
 using FolderCustomizer.Services;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -98,6 +100,17 @@ public partial class MainViewModel : ObservableObject
     #endregion
 
     #region Properties
+    /// <summary>
+    /// Gets or sets the overlay image currently selected in the editor.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSelectedOverlay))]
+    private EditorImageViewModel? selectedOverlay;
+
+    /// <summary>
+    /// Gets whether an overlay image is currently selected.
+    /// </summary>
+    public bool HasSelectedOverlay => SelectedOverlay is not null;
 
     /// <summary>
     /// Gets or sets the path of the folder currently being customised.
@@ -178,6 +191,46 @@ public partial class MainViewModel : ObservableObject
     #region Commands
 
     /// <summary>
+    /// Applies no crop to the selected overlay.
+    /// </summary>
+    [RelayCommand]
+    private void CropNone()
+    {
+        if (SelectedOverlay is not null)
+            SelectedOverlay.CropShape = ImageCropShape.None;
+    }
+
+    /// <summary>
+    /// Applies a rounded-rectangle crop to the selected overlay.
+    /// </summary>
+    [RelayCommand]
+    private void CropRounded()
+    {
+        if (SelectedOverlay is not null)
+            SelectedOverlay.CropShape = ImageCropShape.RoundedRectangle;
+    }
+
+    /// <summary>
+    /// Applies a circular crop to the selected overlay.
+    /// </summary>
+    [RelayCommand]
+    private void CropCircle()
+    {
+        if (SelectedOverlay is not null)
+            SelectedOverlay.CropShape = ImageCropShape.Circle;
+    }
+
+    /// <summary>
+    /// Applies a folder-shaped crop to the selected overlay.
+    /// </summary>
+    [RelayCommand]
+    private void CropFolder()
+    {
+        if (SelectedOverlay is not null)
+            SelectedOverlay.CropShape = ImageCropShape.Folder;
+    }
+
+    /// <summary>
     /// Opens the folder picker and loads the selected folder into the editor.
     /// </summary>
     /// <remarks>
@@ -228,6 +281,19 @@ public partial class MainViewModel : ObservableObject
 
         RefreshColourPreview();
         RefreshFolderPreview();
+    }
+
+    /// <summary>
+    /// Applies the specified crop shape to the currently selected overlay image.
+    /// </summary>
+    /// <param name="cropShape">The crop shape to apply.</param>
+    [RelayCommand]
+    private void SetCropShape(ImageCropShape cropShape)
+    {
+        if (SelectedOverlay is null)
+            return;
+
+        SelectedOverlay.CropShape = cropShape;
     }
 
     /// <summary>
@@ -282,7 +348,8 @@ public partial class MainViewModel : ObservableObject
         var image = new EditorImageViewModel(imagePath)
         {
             SelectAction = SelectOverlay,
-            DeleteAction = RemoveOverlay
+            DeleteAction = RemoveOverlay,
+            DeselectAction = DeselectOverlay,
         };
 
         OverlayImages.Add(image);
@@ -362,6 +429,8 @@ public partial class MainViewModel : ObservableObject
     {
         foreach (EditorImageViewModel image in OverlayImages)
             image.IsSelected = ReferenceEquals(image, selectedImage);
+
+        SelectedOverlay = selectedImage;
     }
 
     /// <summary>
@@ -373,6 +442,17 @@ public partial class MainViewModel : ObservableObject
         OverlayImages.Remove(image);
     }
 
+    /// <summary>
+    /// Deselects the specified overlay if it is currently selected.
+    /// </summary>
+    /// <param name="image">The overlay requesting deselection.</param>
+    private void DeselectOverlay(EditorImageViewModel image)
+    {
+        image.IsSelected = false;
+
+        if (ReferenceEquals(SelectedOverlay, image))
+            SelectedOverlay = null;
+    }
     #endregion
 
     #region Preview

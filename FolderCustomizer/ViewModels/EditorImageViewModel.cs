@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using FolderCustomizer.Editor;
 using System;
 
 namespace FolderCustomizer.ViewModels;
@@ -16,6 +17,12 @@ namespace FolderCustomizer.ViewModels;
 public partial class EditorImageViewModel : ObservableObject
 {
     #region Observable State
+
+    /// <summary>
+    /// Gets or sets the crop shape applied to the overlay image.
+    /// </summary>
+    [ObservableProperty]
+    private ImageCropShape cropShape;
 
     /// <summary>
     /// Gets or sets the file path of the image displayed by this overlay.
@@ -84,6 +91,11 @@ public partial class EditorImageViewModel : ObservableObject
     /// while collection management remains the responsibility of the parent.
     /// </remarks>
     public Action<EditorImageViewModel>? DeleteAction { get; set; }
+
+    /// <summary>
+    /// Gets or sets the action invoked when this overlay requests deselection.
+    /// </summary>
+    public Action<EditorImageViewModel>? DeselectAction { get; set; }
 
     #endregion
 
