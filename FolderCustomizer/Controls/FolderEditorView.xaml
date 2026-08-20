@@ -55,7 +55,8 @@
                         <ItemsControl x:Name="overlayItemsControl"
                                       Width="256"
                                       Height="256"
-                                      ItemsSource="{Binding OverlayImages}">
+                                      ItemsSource="{Binding OverlayImages}"
+                                      RenderTransformOrigin="0.5,0.5">
 
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
@@ -67,8 +68,10 @@
 
                             <ItemsControl.ItemContainerStyle>
                                 <Style TargetType="ContentPresenter">
-                                    <Setter Property="Canvas.Left" Value="{Binding X}"/>
-                                    <Setter Property="Canvas.Top" Value="{Binding Y}"/>
+                                    <Setter Property="Canvas.Left"
+                                            Value="{Binding X}"/>
+                                    <Setter Property="Canvas.Top"
+                                            Value="{Binding Y}"/>
                                 </Style>
                             </ItemsControl.ItemContainerStyle>
 
