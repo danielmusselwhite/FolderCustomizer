@@ -1,0 +1,62 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net10.0-windows</TargetFramework>
+
+		<UseWPF>true</UseWPF>
+		<UseWindowsForms>true</UseWindowsForms>
+
+		<Nullable>enable</Nullable>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+		<ApplicationIcon>assets\icons\FolderCustomizer.ico</ApplicationIcon>
+
+		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+		<SelfContained>true</SelfContained>
+		<PublishSingleFile>true</PublishSingleFile>
+		<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+
+		<Version>1.0.0</Version>
+		<AssemblyVersion>1.0.0.0</AssemblyVersion>
+		<FileVersion>1.0.0.0</FileVersion>
+
+		<Product>Folder Customizer</Product>
+		<Description>Create and apply custom Windows folder icons.</Description>
+		<Copyright>Copyright © 2026 Daniel Musselwhite</Copyright>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <None Remove="assets\masks\folder.png" />
+	  <None Remove="assets\masks\folderWithoutTab.png" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Content Include="assets\icons\FolderCustomizer.ico" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Resource Include="assets\masks\folder.png" />
+	  <Resource Include="assets\masks\folderWithoutTab.png" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Update="Resource1.Designer.cs">
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>Resource1.resx</DependentUpon>
+		</Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Update="Resource1.resx">
+			<Generator>ResXFileCodeGenerator</Generator>
+			<LastGenOutput>Resource1.Designer.cs</LastGenOutput>
+		</EmbeddedResource>
+	</ItemGroup>
+
+</Project>

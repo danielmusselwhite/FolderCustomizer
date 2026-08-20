@@ -1,0 +1,98 @@
+﻿<UserControl x:Class="FolderCustomizer.Views.Controls.FolderEditorView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:editor="clr-namespace:FolderCustomizer.Editor"
+             Background="{StaticResource WorkspaceBrush}">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0"
+                Height="34"
+                Background="#F5F5F5"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="0,0,0,1">
+
+            <Grid Margin="12,0">
+                <TextBlock Text="Preview"
+                           VerticalAlignment="Center"
+                           FontSize="12"
+                           FontWeight="SemiBold"
+                           Foreground="{StaticResource TextBrush}"/>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1"
+              IsEnabled="{Binding IsEditorEnabled}">
+
+            <StackPanel HorizontalAlignment="Center"
+                        VerticalAlignment="Center">
+
+                <Border Padding="16"
+                        Background="#F8F8F8"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1">
+
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="8"
+                                          ShadowDepth="2"
+                                          Opacity="0.10"/>
+                    </Border.Effect>
+
+                    <Grid x:Name="iconEditorSurface"
+                          Width="256"
+                          Height="256">
+
+                        <Image Width="256"
+                               Height="256"
+                               Source="{Binding FolderPreview}"
+                               Stretch="Uniform"
+                               IsHitTestVisible="False"/>
+
+                        <ItemsControl x:Name="overlayItemsControl"
+                                      Width="256"
+                                      Height="256"
+                                      ItemsSource="{Binding OverlayImages}"
+                                      RenderTransformOrigin="0.5,0.5">
+
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <Canvas Width="256"
+                                            Height="256"
+                                            Background="Transparent"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+
+                            <ItemsControl.ItemContainerStyle>
+                                <Style TargetType="ContentPresenter">
+                                    <Setter Property="Canvas.Left"
+                                            Value="{Binding X}"/>
+                                    <Setter Property="Canvas.Top"
+                                            Value="{Binding Y}"/>
+                                </Style>
+                            </ItemsControl.ItemContainerStyle>
+
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <editor:EditableImageCanvas/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+
+                        </ItemsControl>
+
+                    </Grid>
+
+                </Border>
+
+                <TextBlock Margin="0,12,0,0"
+                           HorizontalAlignment="Center"
+                           Text="Select an overlay to move, resize or rotate it"
+                           FontSize="11"
+                           Foreground="{StaticResource SecondaryTextBrush}"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>
