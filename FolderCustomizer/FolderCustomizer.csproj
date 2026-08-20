@@ -12,6 +12,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<Compile Update="Resource1.Designer.cs">
 			<DesignTime>True</DesignTime>
 			<AutoGen>True</AutoGen>

@@ -355,7 +355,7 @@
                     Grid.Column="0"
                     Name="btn_LoadFolder"
                     Style="{StaticResource ToolbarButtonStyle}"
-                    Click="Btn_Load_Click">
+                    Command="{Binding SelectFolderCommand}">
 
                     <StackPanel
                         HorizontalAlignment="Center">
@@ -390,7 +390,7 @@
                 <Button
                     Grid.Column="2"
                     Name="btn_addImage"
-                    IsEnabled="False"
+                    IsEnabled="{Binding IsEditorEnabled}"
                     Style="{StaticResource ToolbarButtonStyle}"
                     Click="Btn_AddImage_Click">
 
@@ -426,7 +426,7 @@
                     Grid.Column="4"
                     Style="{StaticResource ToolbarButtonStyle}"
                     x:Name="btn_ApplyToolbar"
-                    IsEnabled="False"
+                    IsEnabled="{Binding IsEditorEnabled}"
                     Click="Btn_UpdateFolder_Icon">
 
                     <StackPanel
@@ -457,7 +457,7 @@
                 <Button
                     Grid.Column="6"
                     x:Name="btn_ClearStyle"
-                    IsEnabled="False"
+                    IsEnabled="{Binding HasExistingStyle}"
                     Style="{StaticResource ToolbarButtonStyle}"
                     Click="Btn_ClearStyle_Click">
 
@@ -537,9 +537,9 @@
 
                 <!-- Editor canvas -->
 
-                <Grid Grid.Row="1"
-                      x:Name="editorWorkspace"
-                      IsEnabled="False">
+                <Grid
+                    Grid.Row="1"
+                    IsEnabled="{Binding IsEditorEnabled}">
 
                     <StackPanel
                         HorizontalAlignment="Center"
@@ -666,11 +666,11 @@
                                     CornerRadius="2">
 
                                     <TextBlock
-                                        Name="txt_SelectedFolder"
-                                        Text="No folder selected"
+                                        Text="{Binding SelectedFolderPath,
+                                        TargetNullValue=No folder selected,
+                                        FallbackValue=No folder selected}"
                                         VerticalAlignment="Center"
                                         TextTrimming="CharacterEllipsis"
-                                        ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"
                                         FontSize="11"
                                         Foreground="{StaticResource SecondaryTextBrush}"/>
 
@@ -681,7 +681,7 @@
                                     Grid.Column="2"
                                     Content="Browse..."
                                     Style="{StaticResource StandardButtonStyle}"
-                                    Click="Btn_Load_Click"/>
+                                    Command="{Binding SelectFolderCommand}"/>
 
                             </Grid>
 
@@ -720,7 +720,7 @@
                                     Grid.Column="1"
                                     x:Name="btn_ResetColour"
                                     Content="Reset"
-                                    IsEnabled="False"
+                                    IsEnabled="{Binding IsEditorEnabled}"
                                     Height="24"
                                     Padding="8,0"
                                     BorderThickness="0"
@@ -728,7 +728,7 @@
                                     Foreground="{StaticResource AccentBrush}"
                                     FontSize="11"
                                     Cursor="Hand"
-                                    Click="Btn_ResetColour_Click"/>
+                                    Command="{Binding ResetColourCommand}"/>
 
                             </Grid>
 
@@ -736,9 +736,9 @@
                             <Button
                                 Name="btn_ColourPicker"
                                 Height="42"
-                                IsEnabled="False"
+                                IsEnabled="{Binding IsEditorEnabled}"
                                 Style="{StaticResource PropertyButtonStyle}"
-                                Click="Btn_ColourPicker_Click">
+                                Command="{Binding ChooseColourCommand}">
 
                                 <Grid>
 
@@ -770,8 +770,7 @@
                                             FontSize="12"/>
 
                                         <TextBlock
-                                            x:Name="txt_SelectedColour"
-                                            Text="Default"
+                                            Text="{Binding SelectedColourText}"
                                             Margin="0,1,0,0"
                                             FontSize="10"
                                             Foreground="{StaticResource SecondaryTextBrush}"/>
