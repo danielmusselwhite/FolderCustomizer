@@ -9,7 +9,21 @@
 
 		<Nullable>enable</Nullable>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<ApplicationIcon>assets\folderCustomizerIcon.ico</ApplicationIcon>
+
+		<ApplicationIcon>assets\icons\FolderCustomizer.ico</ApplicationIcon>
+
+		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+		<SelfContained>true</SelfContained>
+		<PublishSingleFile>true</PublishSingleFile>
+		<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+
+		<Version>1.0.0</Version>
+		<AssemblyVersion>1.0.0.0</AssemblyVersion>
+		<FileVersion>1.0.0.0</FileVersion>
+
+		<Product>Folder Customizer</Product>
+		<Description>Create and apply custom Windows folder icons.</Description>
+		<Copyright>Copyright © 2026 Daniel Musselwhite</Copyright>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -18,7 +32,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Content Include="assets\folderCustomizerIcon.ico" />
+	  <Content Include="assets\icons\FolderCustomizer.ico" />
 	</ItemGroup>
 
 	<ItemGroup>
