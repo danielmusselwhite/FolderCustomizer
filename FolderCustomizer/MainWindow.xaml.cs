@@ -86,23 +86,48 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (e.NewItems is null)
-            return;
+        if (e.NewItems is not null)
+        {
+            foreach (EditorImageViewModel image in e.NewItems)
+                AddOverlay(image);
+        }
 
-        foreach (EditorImageViewModel imageViewModel in e.NewItems)
-            AddOverlay(imageViewModel);
+        if (e.OldItems is not null)
+        {
+            foreach (EditorImageViewModel image in e.OldItems)
+                RemoveOverlay(image);
+        }
     }
 
     private void AddOverlay(EditorImageViewModel imageViewModel)
     {
         try
         {
-            var editableImage = new EditableImageCanvas(new Uri(imageViewModel.ImagePath, UriKind.Absolute));
+            var editableImage = new EditableImageCanvas(imageViewModel);
+
+            editableImage.DeleteRequested += (_, _) =>
+            {
+                _viewModel.OverlayImages.Remove(imageViewModel);
+            };
+
             iconEditorCanvas.Children.Add(editableImage);
         }
         catch (Exception ex)
         {
             ShowError("Couldn't add image", $"The selected image couldn't be loaded.\n\n{ex.Message}");
+        }
+    }
+
+    private void RemoveOverlay(EditorImageViewModel imageViewModel)
+    {
+        for (int i = iconEditorCanvas.Children.Count - 1; i >= 0; i--)
+        {
+            if (iconEditorCanvas.Children[i] is EditableImageCanvas editableImage &&
+                ReferenceEquals(editableImage.ViewModel, imageViewModel))
+            {
+                iconEditorCanvas.Children.RemoveAt(i);
+                return;
+            }
         }
     }
 
