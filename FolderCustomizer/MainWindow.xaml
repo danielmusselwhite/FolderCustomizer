@@ -392,7 +392,7 @@
                     Name="btn_addImage"
                     IsEnabled="{Binding IsEditorEnabled}"
                     Style="{StaticResource ToolbarButtonStyle}"
-                    Click="Btn_AddImage_Click">
+                    Command="{Binding AddImageCommand}">
 
                     <StackPanel
                         HorizontalAlignment="Center">
@@ -459,7 +459,7 @@
                     x:Name="btn_ClearStyle"
                     IsEnabled="{Binding HasExistingStyle}"
                     Style="{StaticResource ToolbarButtonStyle}"
-                    Click="Btn_ClearStyle_Click">
+                    Command="{Binding ClearStyleCommand}">
 
                     <StackPanel HorizontalAlignment="Center">
 

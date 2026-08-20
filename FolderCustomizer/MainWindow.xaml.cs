@@ -1,8 +1,8 @@
 ﻿using FolderCustomizer.Editor;
 using FolderCustomizer.Services;
 using FolderCustomizer.ViewModels;
-using Microsoft.Win32;
 using System;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
@@ -10,7 +10,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-
 using MediaColor = System.Windows.Media.Color;
 
 namespace FolderCustomizer;
@@ -21,6 +20,7 @@ public partial class MainWindow : Window
 
     private readonly MainViewModel _viewModel;
     private readonly FolderIconService _folderIconService;
+    private readonly ImageProcessingService _imageProcessingService;
 
     private Image? _folderIcon;
 
@@ -29,13 +29,20 @@ public partial class MainWindow : Window
         InitializeComponent();
 
         _folderIconService = new FolderIconService();
-        _viewModel = new MainViewModel(new FolderPickerService(), new ColorPickerService(), _folderIconService);
+        _imageProcessingService = new ImageProcessingService();
+        _viewModel = new MainViewModel(
+            new FolderPickerService(),
+            new ColorPickerService(),
+            _folderIconService,
+            _imageProcessingService,
+            new ImagePickerService());
 
         DataContext = _viewModel;
 
         InitializeFolderIcon();
 
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
+        _viewModel.OverlayImages.CollectionChanged += OverlayImages_CollectionChanged;
     }
 
     #region ViewModel Event Handling
@@ -69,6 +76,38 @@ public partial class MainWindow : Window
 
     #endregion
 
+    #region Overlay Images Event Handling
+
+    private void OverlayImages_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.Action == NotifyCollectionChangedAction.Reset)
+        {
+            ClearOverlays();
+            return;
+        }
+
+        if (e.NewItems is null)
+            return;
+
+        foreach (EditorImageViewModel imageViewModel in e.NewItems)
+            AddOverlay(imageViewModel);
+    }
+
+    private void AddOverlay(EditorImageViewModel imageViewModel)
+    {
+        try
+        {
+            var editableImage = new EditableImageCanvas(new Uri(imageViewModel.ImagePath, UriKind.Absolute));
+            iconEditorCanvas.Children.Add(editableImage);
+        }
+        catch (Exception ex)
+        {
+            ShowError("Couldn't add image", $"The selected image couldn't be loaded.\n\n{ex.Message}");
+        }
+    }
+
+    #endregion
+
     #region Folder Icon
 
     private void InitializeFolderIcon()
@@ -97,7 +136,7 @@ public partial class MainWindow : Window
             : WindowsFolderIconProvider.GetDefaultFolderIcon();
 
         if (_viewModel.SelectedColour is MediaColor colour)
-            source = ApplyColor(source, colour);
+            source = _imageProcessingService.ApplyColor(source, colour);
 
         _folderIcon.Source = source;
     }
@@ -105,32 +144,6 @@ public partial class MainWindow : Window
     #endregion
 
     #region Overlay Images
-
-    private void Btn_AddImage_Click(object sender, RoutedEventArgs e)
-    {
-        var dialog = new OpenFileDialog
-        {
-            Title = "Add overlay image",
-            Filter = "Image files (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg|" +
-                     "PNG images (*.png)|*.png|" +
-                     "JPEG images (*.jpg;*.jpeg)|*.jpg;*.jpeg",
-            CheckFileExists = true,
-            Multiselect = false
-        };
-
-        if (dialog.ShowDialog(this) != true)
-            return;
-
-        try
-        {
-            var editableImage = new EditableImageCanvas(new Uri(dialog.FileName, UriKind.Absolute));
-            iconEditorCanvas.Children.Add(editableImage);
-        }
-        catch (Exception ex)
-        {
-            ShowError("Couldn't add image", $"The selected image couldn't be loaded.\n\n{ex.Message}");
-        }
-    }
 
     private void ClearOverlays()
     {
@@ -167,55 +180,6 @@ public partial class MainWindow : Window
             (byte)(color.R * darkenFactor),
             (byte)(color.G * darkenFactor),
             (byte)(color.B * darkenFactor));
-    }
-
-    private static WriteableBitmap ApplyColor(BitmapSource source, MediaColor color)
-    {
-        var bitmap = new WriteableBitmap(source);
-
-        bitmap.Lock();
-
-        try
-        {
-            unsafe
-            {
-                byte* buffer = (byte*)bitmap.BackBuffer.ToPointer();
-
-                int stride = bitmap.BackBufferStride;
-                int width = bitmap.PixelWidth;
-                int height = bitmap.PixelHeight;
-
-                for (int y = 0; y < height; y++)
-                {
-                    byte* row = buffer + (y * stride);
-
-                    for (int x = 0; x < width; x++)
-                    {
-                        byte* pixel = row + (x * 4);
-
-                        byte blue = pixel[0];
-                        byte green = pixel[1];
-                        byte red = pixel[2];
-
-                        double intensity = ((0.299 * red) + (0.587 * green) + (0.114 * blue)) / 255.0;
-
-                        pixel[0] = (byte)(color.B * intensity);
-                        pixel[1] = (byte)(color.G * intensity);
-                        pixel[2] = (byte)(color.R * intensity);
-                    }
-                }
-            }
-
-            bitmap.AddDirtyRect(new Int32Rect(0, 0, bitmap.PixelWidth, bitmap.PixelHeight));
-        }
-        finally
-        {
-            bitmap.Unlock();
-        }
-
-        bitmap.Freeze();
-
-        return bitmap;
     }
 
     #endregion
@@ -326,42 +290,6 @@ public partial class MainWindow : Window
                 editableImage.RestoreEditorChrome();
 
             iconEditorCanvas.UpdateLayout();
-        }
-    }
-
-    #endregion
-
-    #region Clear Style
-
-    private void Btn_ClearStyle_Click(object sender, RoutedEventArgs e)
-    {
-        if (!TryGetSelectedFolder(out string folderPath))
-            return;
-
-        try
-        {
-            _folderIconService.ClearCustomStyle(folderPath);
-
-            ResetEditorAfterSave();
-
-            MessageBox.Show(
-                this,
-                "The custom folder style was removed successfully.",
-                "Style removed",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            ShowError("Permission denied", "Folder Customizer doesn't have permission to clear the custom icon from this folder.");
-        }
-        catch (IOException ex)
-        {
-            ShowError("Couldn't clear style", ex.Message);
-        }
-        catch (Exception ex)
-        {
-            ShowError("Something went wrong", ex.Message);
         }
     }
 
