@@ -7,7 +7,7 @@ Folder Customizer provides a simple graphical editor for recolouring the native 
 Behind the editor, the application handles native Windows Shell integration, bitmap processing, ICO generation, file-system metadata, and WPF rendering.
 
 ## Demo
-[![Demo Video](docs/Images/DemoVideoPreview.png)](https://youtu.be/4Tca0lsZU-c)
+[![Demo Video](Docs/Images/DemoVideoPreview.png)](https://youtu.be/4Tca0lsZU-c)
 
 ## Key Features
 
@@ -55,7 +55,7 @@ This allows the application to present a straightforward visual editor while hid
 
 Folder Customizer uses an **MVVM-oriented architecture** with a deliberate separation between application state, visual interaction, and operating-system integration.
 
-![System Architecture Diagram](docs/Images/SystemArchitectureDiagram.png)
+![System Architecture Diagram](Docs/Images/SystemArchitectureDiagram.png)
 
 ### Presentation
 
