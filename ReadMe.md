@@ -6,6 +6,9 @@ Folder Customizer provides a simple graphical editor for recolouring the native 
 
 Behind the editor, the application handles native Windows Shell integration, bitmap processing, ICO generation, file-system metadata, and WPF rendering.
 
+## Demo
+[![Demo Video](docs/Images/DemoVideoPreview.png)](https://youtu.be/4Tca0lsZU-c)
+
 ## Key Features
 
 - 🎨 **Folder recolouring** — recolour the native Windows folder icon while preserving its original highlights and shading.
